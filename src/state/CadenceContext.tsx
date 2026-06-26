@@ -128,7 +128,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   }, [audioReady]);
 
   const [bpm, setBpmState] = useState(180);
-  const [isPlaying, setIsPlaying] = useState(true);
+  // Start paused: launching (or mis-tapping) the app must never blast a
+  // metronome in a quiet room — the user explicitly presses play.
+  const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSoundState] = useState<SoundId>('woodfish');
   const [coexist, setCoexistState] = useState<CoexistMode>('mix');
   const [beatVolume, setBeatVolumeState] = useState(0.72);
