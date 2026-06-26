@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
+import { MiniStepper } from '../src/components/MiniStepper';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, formatClock } from '../src/state/CadenceContext';
@@ -11,7 +12,7 @@ import { useCadence, formatClock } from '../src/state/CadenceContext';
 export default function Plan() {
   const { c, isDark } = useTheme();
   const router = useRouter();
-  const { plan, startWorkout } = useCadence();
+  const { plan, startWorkout, addPhase, removePhase, updatePhase } = useCadence();
 
   const totalSec = plan.reduce((a, p) => a + p.durationSec, 0);
   const avg = Math.round(plan.reduce((a, p) => a + p.bpm * p.durationSec, 0) / totalSec);
@@ -31,7 +32,9 @@ export default function Plan() {
           const active = i === activeIdx;
           return (
             <View key={p.id}>
-              <View
+              <Pressable
+                onLongPress={() => removePhase(p.id)}
+                delayLongPress={400}
                 style={[
                   styles.phase,
                   {
@@ -43,34 +46,73 @@ export default function Plan() {
                   },
                 ]}
               >
-                <View style={[styles.bar, { backgroundColor: p.color }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.phaseName, { color: c.text }]}>{p.name}</Text>
-                  <Text style={[styles.phaseTime, { color: c.textFaint }]}>{formatClock(p.durationSec)}</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={[styles.phaseBpm, { color: c.text }]}>{p.bpm}</Text>
-                  <Text style={[styles.phaseUnit, { color: c.textFaint }]}>SPM</Text>
-                </View>
-              </View>
-
-              {i < plan.length - 1 && (
-                <View style={styles.connector}>
-                  <View style={[styles.connectorLine, { backgroundColor: c.trackInactive }]} />
-                  <View style={[styles.connectorPill, { backgroundColor: isDark ? 'rgba(255,140,43,0.18)' : '#FFEAD6' }]}>
-                    <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: c.brandText }}>
-                      ↑ 无缝换算 +{plan[i + 1].bpm - p.bpm}
-                    </Text>
+                <View style={styles.phaseTop}>
+                  <View style={[styles.bar, { backgroundColor: p.color }]} />
+                  <View style={{ flex: 1 }}>
+                    <TextInput
+                      value={p.name}
+                      onChangeText={(t) => updatePhase(p.id, { name: t })}
+                      placeholder="阶段名称"
+                      placeholderTextColor={c.textFaint}
+                      maxLength={12}
+                      style={[styles.phaseName, styles.phaseNameInput, { color: c.text, borderBottomColor: c.divider }]}
+                    />
+                    <Text style={[styles.phaseTime, { color: c.textFaint }]}>{formatClock(p.durationSec)}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[styles.phaseBpm, { color: c.text }]}>{p.bpm}</Text>
+                    <Text style={[styles.phaseUnit, { color: c.textFaint }]}>SPM</Text>
                   </View>
                 </View>
-              )}
+
+                <View style={[styles.phaseControls, { borderTopColor: c.divider }]}>
+                  <MiniStepper
+                    value={formatClock(p.durationSec)}
+                    caption="时长"
+                    onStep={(d) => updatePhase(p.id, { durationSec: p.durationSec + d * 30 })}
+                  />
+                  <MiniStepper
+                    value={String(p.bpm)}
+                    caption="步频"
+                    onStep={(d) => updatePhase(p.id, { bpm: p.bpm + d })}
+                  />
+                </View>
+              </Pressable>
+
+              {i < plan.length - 1 && (() => {
+                const delta = plan[i + 1].bpm - p.bpm;
+                const label =
+                  delta > 0 ? `↑ 无缝换算 +${delta}`
+                  : delta < 0 ? `↓ 无缝换算 −${-delta}`
+                  : '无缝换算 · 持平';
+                return (
+                  <View style={styles.connector}>
+                    <View style={[styles.connectorLine, { backgroundColor: c.trackInactive }]} />
+                    <View style={[styles.connectorPill, { backgroundColor: isDark ? 'rgba(255,140,43,0.18)' : '#FFEAD6' }]}>
+                      <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: c.brandText }}>
+                        {label}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })()}
             </View>
           );
         })}
 
-        <View style={[styles.addPhase, { borderColor: isDark ? '#3A3328' : '#D8D1C6' }]}>
+        <Pressable
+          onPress={addPhase}
+          style={({ pressed }) => [
+            styles.addPhase,
+            { borderColor: isDark ? '#3A3328' : '#D8D1C6', opacity: pressed ? 0.6 : 1 },
+          ]}
+        >
           <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.textFaint }}>+ 添加阶段</Text>
-        </View>
+        </Pressable>
+
+        {plan.length > 1 && (
+          <Text style={[styles.deleteHint, { color: c.textFaint }]}>长按阶段卡片可删除</Text>
+        )}
       </ScrollView>
 
       <View style={{ paddingHorizontal: 16 }}>
@@ -96,9 +138,6 @@ export default function Plan() {
 
 const styles = StyleSheet.create({
   phase: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
     paddingVertical: 15,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -106,8 +145,18 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 2,
   },
+  phaseTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  phaseControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 13,
+    paddingTop: 13,
+    borderTopWidth: 1,
+  },
   bar: { width: 10, height: 46, borderRadius: 6 },
   phaseName: { fontFamily: fonts.bodyBold, fontSize: 17 },
+  phaseNameInput: { padding: 0, alignSelf: 'flex-start', borderBottomWidth: 1, paddingBottom: 2, minWidth: 80 },
   phaseTime: { fontFamily: fonts.bodyMedium, fontSize: 12.5, marginTop: 1 },
   phaseBpm: { fontFamily: fonts.displayExtraBold, fontSize: 30, fontVariant: ['tabular-nums'] },
   phaseUnit: { fontFamily: fonts.bodySemiBold, fontSize: 11, letterSpacing: 1 },
@@ -122,6 +171,7 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
   },
+  deleteHint: { fontFamily: fonts.bodyMedium, fontSize: 12, textAlign: 'center', marginTop: 10 },
   summary: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingBottom: 12 },
   summaryText: { fontFamily: fonts.bodySemiBold, fontSize: 13 },
   startBtn: {

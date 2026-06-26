@@ -90,6 +90,9 @@ interface CadenceApi extends CadenceState {
   startWorkout: () => void;
   stopWorkout: () => void;
   skipPhase: () => void;
+  addPhase: () => void;
+  removePhase: (id: string) => void;
+  updatePhase: (id: string, patch: Partial<Pick<PlanPhase, 'bpm' | 'durationSec' | 'name'>>) => void;
 }
 
 const Ctx = createContext<CadenceApi | null>(null);
@@ -131,7 +134,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   const [beatVolume, setBeatVolumeState] = useState(0.72);
   const [ducking, setDuckingState] = useState(false);
   const [keepAwake, setKeepAwake] = useState(true);
-  const [plan] = useState<PlanPhase[]>(DEFAULT_PLAN);
+  const [plan, setPlan] = useState<PlanPhase[]>(DEFAULT_PLAN);
 
   const [running, setRunning] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
@@ -269,6 +272,41 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
 
   const skipPhase = useCallback(() => advancePhase(), [advancePhase]);
 
+  // ── Plan editing ─────────────────────────────────────────────────
+  const addPhase = useCallback(() => {
+    setPlan((prev) => {
+      const palette = [brand.light, brand.base, brand.deep];
+      const last = prev[prev.length - 1];
+      const next: PlanPhase = {
+        id: `p${Date.now()}`,
+        name: `阶段 ${prev.length + 1}`,
+        durationSec: 5 * 60,
+        // Start from the previous phase's rate; the user edits it freely.
+        bpm: clampBpm(last?.bpm ?? 180),
+        color: palette[prev.length % palette.length],
+      };
+      return [...prev, next];
+    });
+  }, []);
+
+  const removePhase = useCallback((id: string) => {
+    // Keep at least one phase so a workout always has something to run.
+    setPlan((prev) => (prev.length <= 1 ? prev : prev.filter((p) => p.id !== id)));
+  }, []);
+
+  const updatePhase = useCallback<CadenceApi['updatePhase']>((id, patch) => {
+    setPlan((prev) =>
+      prev.map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p };
+        if (patch.bpm != null) next.bpm = clampBpm(patch.bpm);
+        if (patch.durationSec != null) next.durationSec = Math.max(30, Math.round(patch.durationSec));
+        if (patch.name != null) next.name = patch.name;
+        return next;
+      }),
+    );
+  }, []);
+
   // ── Live presentation (iOS Live Activity / Android foreground notification) ──
   // Keep the latest snapshot in a ref so the start/update effects always push
   // current values without re-subscribing.
@@ -353,12 +391,15 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       startWorkout,
       stopWorkout,
       skipPhase,
+      addPhase,
+      removePhase,
+      updatePhase,
     }),
     [
       bpm, isPlaying, sound, coexist, beatVolume, ducking, keepAwake, plan,
       running, phaseIndex, phaseRemainingSec, audioReady, setBpm, step,
       togglePlay, setSound, setCoexist, setBeatVolume, setDucking, startWorkout,
-      stopWorkout, skipPhase,
+      stopWorkout, skipPhase, addPhase, removePhase, updatePhase,
     ],
   );
 
