@@ -127,8 +127,9 @@ class CadenceLiveService : Service() {
   }
 
   private fun buildNotification(): Notification {
+    val isWorkout = phaseCount > 1
     val title = if (phaseName.isEmpty()) "Driftless" else "Driftless · $phaseName"
-    val sub = "$bpm SPM · 第 ${phaseIndex + 1}/$phaseCount 段"
+    val sub = if (isWorkout) "$bpm SPM · 第 ${phaseIndex + 1}/$phaseCount 段" else "$bpm SPM"
 
     val builder = NotificationCompat.Builder(this, CHANNEL_ID)
       .setSmallIcon(android.R.drawable.ic_media_play)
@@ -141,8 +142,9 @@ class CadenceLiveService : Service() {
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setOnlyAlertOnce(true)
       .addAction(0, "−1", servicePending(ACTION_DEC))
-      .addAction(0, "跳过本段", servicePending(ACTION_SKIP))
-      .addAction(0, "+1", servicePending(ACTION_INC))
+    // "跳过本段" only makes sense inside a structured workout.
+    if (isWorkout) builder.addAction(0, "跳过本段", servicePending(ACTION_SKIP))
+    builder.addAction(0, "+1", servicePending(ACTION_INC))
 
     contentPending()?.let { builder.setContentIntent(it) }
 

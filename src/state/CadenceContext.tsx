@@ -318,14 +318,26 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     endTimeMs: 0,
     running: false,
   });
-  liveStateRef.current = {
-    bpm,
-    phaseName: (plan[phaseIndex] ?? plan[0]).name,
-    phaseIndex,
-    phaseCount: plan.length,
-    endTimeMs: phaseEndRef.current,
-    running,
-  };
+  // During a workout: show the phase, its index, and a live countdown. On the
+  // home screen (free metronome): just the rate — phaseCount 1 tells the native
+  // surface to drop the "第 x/n 段" line and the skip control, no countdown.
+  liveStateRef.current = running
+    ? {
+        bpm,
+        phaseName: (plan[phaseIndex] ?? plan[0]).name,
+        phaseIndex,
+        phaseCount: plan.length,
+        endTimeMs: phaseEndRef.current,
+        running: true,
+      }
+    : {
+        bpm,
+        phaseName: '',
+        phaseIndex: 0,
+        phaseCount: 1,
+        endTimeMs: 0,
+        running: isPlaying,
+      };
 
   // Lock-screen ±1 / skip controls feed back into cadence state.
   useEffect(() => {
@@ -337,19 +349,20 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     return () => sub?.remove();
   }, [step, skipPhase]);
 
-  // Start/end the presentation with the workout.
+  // Show the lock-screen / notification card whenever the metronome is sounding,
+  // from the home screen on — not only during a structured workout.
   useEffect(() => {
-    if (running) CadenceLive.start(liveStateRef.current);
+    if (isPlaying) CadenceLive.start(liveStateRef.current);
     else CadenceLive.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
+  }, [isPlaying]);
 
   // Push fresh content when the rate or phase changes (iOS counts the timer down
   // natively from endTimeMs, so per-second updates aren't needed).
   useEffect(() => {
-    if (running) CadenceLive.update(liveStateRef.current);
+    if (isPlaying) CadenceLive.update(liveStateRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bpm, phaseIndex, running]);
+  }, [bpm, phaseIndex, running, isPlaying]);
 
   // running countdown
   useEffect(() => {
