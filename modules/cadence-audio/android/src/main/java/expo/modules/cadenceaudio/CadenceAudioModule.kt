@@ -48,9 +48,13 @@ class CadenceAudioModule : Module() {
   @Volatile private var mixWithOthers = true
   @Volatile private var ducking = false
 
-  // Audio focus is only held while ducking; otherwise we deliberately request
-  // none so beats mix on top of other audio (PRD §3.2 coexist).
+  // Audio focus reflects the playback mode (see applyFocus): GAIN for exclusive
+  // (others pause), TRANSIENT_MAY_DUCK for coexist+ducking (others lower), and
+  // none for plain coexist so beats mix on top (PRD §3.2).
   private var focusRequest: AudioFocusRequest? = null
+  @Volatile private var currentFocusGain = 0 // 0 = no focus held
+  // No-op: we synthesize our own beats and don't pause on focus loss.
+  private val focusListener = AudioManager.OnAudioFocusChangeListener { }
 
   private var sampleRate = 48000
   private var track: AudioTrack? = null
@@ -88,9 +92,13 @@ class CadenceAudioModule : Module() {
       lastEmittedBeat = 0
       running = true
       ensurePlaying()
+      applyFocus()
     }
 
-    Function("stop") { running = false }
+    Function("stop") {
+      running = false
+      applyFocus()
+    }
 
     Function("setBpm") { bpm: Double -> intervalSamples = intervalSamplesFor(bpm) }
 
@@ -98,11 +106,14 @@ class CadenceAudioModule : Module() {
 
     Function("setSound") { id: String -> selectedSound = soundIndex(id) }
 
-    Function("setMixWithOthers") { mix: Boolean -> mixWithOthers = mix }
+    Function("setMixWithOthers") { mix: Boolean ->
+      mixWithOthers = mix
+      applyFocus()
+    }
 
     Function("setDucking") { duck: Boolean ->
       ducking = duck
-      if (duck) requestDuckFocus() else abandonFocus()
+      applyFocus()
     }
 
     OnDestroy { teardown() }
@@ -273,46 +284,62 @@ class CadenceAudioModule : Module() {
     mainHandler.post(poll)
   }
 
-  // MARK: - Audio focus (only held while ducking)
+  // MARK: - Audio focus (matches the coexist / exclusive / ducking mode)
 
   private fun audioManager(): AudioManager? =
     appContext.reactContext?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
-  private fun requestDuckFocus() {
+  /**
+   * Reconcile the held audio focus with the current mode:
+   *  - exclusive (mixWithOthers == false) → AUDIOFOCUS_GAIN, so other apps pause
+   *  - coexist + ducking → AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, so others lower
+   *  - plain coexist, or not playing → no focus, so beats just mix on top
+   */
+  private fun applyFocus() {
+    val desired = when {
+      !running -> 0
+      !mixWithOthers -> AudioManager.AUDIOFOCUS_GAIN
+      ducking -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+      else -> 0
+    }
+    if (desired == currentFocusGain) return
+    abandonFocus()
+    if (desired != 0) requestFocus(desired)
+  }
+
+  private fun requestFocus(gain: Int) {
     val am = audioManager() ?: return
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      if (focusRequest != null) return
-      val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+      val req = AudioFocusRequest.Builder(gain)
         .setAudioAttributes(
           AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA)
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
         )
-        // We synthesize beats ourselves and never pause; ignore focus changes.
+        .setOnAudioFocusChangeListener(focusListener, mainHandler)
         .setWillPauseWhenDucked(false)
         .build()
       focusRequest = req
       am.requestAudioFocus(req)
     } else {
       @Suppress("DEPRECATION")
-      am.requestAudioFocus(
-        null,
-        AudioManager.STREAM_MUSIC,
-        AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
-      )
+      am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, gain)
     }
+    currentFocusGain = gain
   }
 
   private fun abandonFocus() {
-    val am = audioManager() ?: return
+    if (currentFocusGain == 0) return
+    val am = audioManager()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      focusRequest?.let { am.abandonAudioFocusRequest(it) }
+      focusRequest?.let { am?.abandonAudioFocusRequest(it) }
       focusRequest = null
     } else {
       @Suppress("DEPRECATION")
-      am.abandonAudioFocus(null)
+      am?.abandonAudioFocus(focusListener)
     }
+    currentFocusGain = 0
   }
 
   // MARK: - Teardown
