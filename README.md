@@ -43,6 +43,10 @@ modules/cadence-audio/   本地原生模块：高精度音频引擎（见下）
   ios/CadenceAudioModule.swift     AVAudioEngine 实现
   android/.../CadenceAudioModule.kt AudioTrack 实现
   src/CadenceAudioModule.web.ts    WebAudio 实现（浏览器可发声）
+assets/
+  icon.png                App 主图标
+  android-icon-*.png      Android adaptive icon 资源
+  splash-icon*.png        明暗模式品牌启动屏
 ```
 
 ## 高精度音频引擎（`modules/cadence-audio`）
@@ -70,11 +74,11 @@ Expo Go（无原生模块）下回退到纯 JS 调度器（只动画、不发声
 
 ```bash
 brew install cocoapods      # iOS 首次需要
-npx expo run:ios            # 或 npx expo run:android
+pnpm exec expo run:ios      # 或 pnpm exec expo run:android
 ```
 
 > 本仓库已 `expo prebuild` 生成 `ios/` 与 `android/`（已 gitignore，可随时
-> `npx expo prebuild --clean` 重新生成）。
+> `pnpm exec expo prebuild --clean` 重新生成）。
 
 ## 验证状态
 
@@ -82,8 +86,8 @@ npx expo run:ios            # 或 npx expo run:android
 - ✅ Expo 自动链接在 iOS / Android 均识别到原生模块（`expo-modules-autolinking resolve`）
 - ✅ `expo prebuild` 双平台生成无误
 - ✅ Web 构建导出，WebAudio 引擎真实按 `AudioContext.currentTime` 排入节拍、零运行时报错
-- ⚠️ Swift / Kotlin 的**原生编译**未在本机执行（缺 CocoaPods / JDK）——
-  请在装好原生工具链的机器上 `expo run:ios` / `run:android` 验证发声
+- ✅ Android debug build 已在 USB 真机上完成构建、安装与启动验证
+- ⚠️ iOS 原生编译仍需配置 Apple Team ID 后再验证
 
 ## 仍待接入（需各自的原生工作）
 
