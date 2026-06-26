@@ -127,9 +127,12 @@ class CadenceAudioModule : Module() {
     val minBuf = AudioTrack.getMinBufferSize(sampleRate, channelMask, AudioFormat.ENCODING_PCM_FLOAT)
     val bufBytes = max(minBuf, 4 /*bytes*/ * 2 /*ch*/ * 1024)
 
+    // USAGE_MEDIA routes to the music stream (the volume the user controls with
+    // the volume keys), so beats are reliably audible. We still never request
+    // audio focus, so they mix on top of any playing music (PRD §3.2 coexist).
     val attrs = AudioAttributes.Builder()
-      .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-      .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+      .setUsage(AudioAttributes.USAGE_MEDIA)
+      .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
       .build()
     val fmt = AudioFormat.Builder()
       .setSampleRate(sampleRate)
@@ -282,8 +285,8 @@ class CadenceAudioModule : Module() {
       val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
         .setAudioAttributes(
           AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
             .build()
         )
         // We synthesize beats ourselves and never pause; ignore focus changes.

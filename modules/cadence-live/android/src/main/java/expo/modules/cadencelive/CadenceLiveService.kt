@@ -24,7 +24,13 @@ import androidx.core.app.ServiceCompat
 class CadenceLiveService : Service() {
 
   companion object {
-    const val CHANNEL_ID = "driftless_cadence"
+    // v2: bumped to a fresh id because the original channel was created at
+    // IMPORTANCE_LOW (a "silent" notification), which many OEMs hide from the
+    // lock screen. A channel's importance can't be raised after creation, so we
+    // migrate to a new id at IMPORTANCE_DEFAULT with explicit PUBLIC lock-screen
+    // visibility — still silent (no channel sound), but shown on the lock screen.
+    const val CHANNEL_ID = "driftless_cadence_v2"
+    const val OLD_CHANNEL_ID = "driftless_cadence"
     const val NOTIF_ID = 4201
 
     const val ACTION_START = "expo.modules.cadencelive.START"
@@ -90,15 +96,19 @@ class CadenceLiveService : Service() {
   private fun ensureChannel() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
     val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    // Drop the old LOW-importance channel so it doesn't linger in app settings.
+    mgr.deleteNotificationChannel(OLD_CHANNEL_ID)
     if (mgr.getNotificationChannel(CHANNEL_ID) == null) {
       val channel = NotificationChannel(
         CHANNEL_ID,
         "跑步节拍",
-        NotificationManager.IMPORTANCE_LOW,
+        NotificationManager.IMPORTANCE_DEFAULT,
       ).apply {
         description = "运行中的步频与控制"
         setShowBadge(false)
         setSound(null, null)
+        enableVibration(false)
+        lockscreenVisibility = Notification.VISIBILITY_PUBLIC
       }
       mgr.createNotificationChannel(channel)
     }
@@ -125,7 +135,6 @@ class CadenceLiveService : Service() {
       .setContentTitle(title)
       .setContentText(sub)
       .setOngoing(true)
-      .setSilent(true)
       .setColorized(true)
       .setColor(0xFFFF8C2B.toInt())
       .setCategory(NotificationCompat.CATEGORY_TRANSPORT)

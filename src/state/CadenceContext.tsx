@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { CadenceScheduler, clampBpm } from '../audio/CadenceScheduler';
 import { brand } from '../theme/tokens';
+import { Platform, PermissionsAndroid } from 'react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import CadenceAudio from '../../modules/cadence-audio';
 import CadenceLive, { LiveSessionState } from '../../modules/cadence-live';
@@ -212,6 +213,16 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       };
     }
   }, [keepAwake, isPlaying]);
+
+  // Android 13+ needs the runtime POST_NOTIFICATIONS grant before the live
+  // workout's foreground-service notification (lock-screen card) can show.
+  useEffect(() => {
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      ).catch(() => {});
+    }
+  }, []);
 
   // Initialize the engine once.
   useEffect(() => {
