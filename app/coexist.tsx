@@ -42,6 +42,7 @@ export default function Coexist() {
   };
 
   const volPct = Math.round(beatVolume * 100);
+  const isMix = coexist === 'mix';
 
   return (
     <Screen>
@@ -57,8 +58,10 @@ export default function Coexist() {
         {/* layering visualization */}
         <View style={[styles.card, { backgroundColor: c.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
           <View style={styles.vizRow}>
-            <Text style={[styles.vizLabel, { color: c.textFaint }]}>音乐 / 播客</Text>
-            <View style={styles.vizBars}>
+            <Text style={[styles.vizLabel, { color: c.textFaint }]}>
+              音乐 / 播客{isMix ? '' : ' · 已暂停'}
+            </Text>
+            <View style={[styles.vizBars, !isMix && { opacity: 0.3 }]}>
               {MUSIC_BARS.map((h, i) => (
                 <View
                   key={i}
@@ -75,10 +78,17 @@ export default function Coexist() {
               ))}
             </View>
           </View>
-          <Text style={[styles.cardNote, { color: c.textFaint }]}>
-            节拍声<Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>叠加</Text>在你正在听的音乐之上，
-            <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>绝不打断、绝不暂停</Text>其它 App。
-          </Text>
+          {isMix ? (
+            <Text style={[styles.cardNote, { color: c.textFaint }]}>
+              节拍声<Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>叠加</Text>在你正在听的音乐之上，
+              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>绝不打断、绝不暂停</Text>其它 App。
+            </Text>
+          ) : (
+            <Text style={[styles.cardNote, { color: c.textFaint }]}>
+              开始播放时<Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>暂停其它 App</Text> 的音乐 / 播客，
+              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>只播放节拍声</Text>；切回共存即可恢复叠加。
+            </Text>
+          )}
         </View>
 
         {/* settings group */}
