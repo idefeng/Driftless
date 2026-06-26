@@ -9,12 +9,23 @@ import { Wordmark } from '../src/components/Logo';
 import { Chip, RoundIconButton, MenuIcon, MiniBars, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
-import { useCadence, SOUND_NAME } from '../src/state/CadenceContext';
+import { useCadence, SOUND_NAME, SOUNDS } from '../src/state/CadenceContext';
 
 export default function Home() {
   const { c, isDark } = useTheme();
   const router = useRouter();
-  const { bpm, isPlaying, sound, coexist, step, togglePlay } = useCadence();
+  const { bpm, isPlaying, sound, coexist, step, togglePlay, setSound, setCoexist } = useCadence();
+
+  // Tap the sound chip to quick-cycle to the next timbre; long-press for the
+  // full picker with descriptions.
+  const cycleSound = () => {
+    const i = SOUNDS.findIndex((s) => s.id === sound);
+    setSound(SOUNDS[(i + 1) % SOUNDS.length].id);
+  };
+
+  // Tap the mode chip to toggle coexist ⇄ exclusive; long-press for the full
+  // coexist settings page.
+  const toggleCoexist = () => setCoexist(coexist === 'mix' ? 'exclusive' : 'mix');
 
   return (
     <Screen>
@@ -41,13 +52,13 @@ export default function Home() {
         </View>
 
         <View style={styles.chips}>
-          <Pressable onPress={() => router.push('/sounds')}>
+          <Pressable onPress={cycleSound} onLongPress={() => router.push('/sounds')} delayLongPress={300}>
             <Chip>
               <MiniBars color={c.textFaint} heights={[6, 13, 9]} />
               <Text style={[styles.chipText, { color: c.text }]}>{SOUND_NAME[sound]}</Text>
             </Chip>
           </Pressable>
-          <Pressable onPress={() => router.push('/coexist')}>
+          <Pressable onPress={toggleCoexist} onLongPress={() => router.push('/coexist')} delayLongPress={300}>
             <Chip accent>
               {dot(isDark ? brand.glow : brand.deep)}
               <Text style={[styles.chipText, { color: c.brandText }]}>
