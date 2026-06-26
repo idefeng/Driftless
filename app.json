@@ -1,25 +1,50 @@
 {
   "expo": {
-    "name": "driftless-app",
-    "slug": "driftless-app",
+    "name": "Driftless",
+    "slug": "driftless",
     "version": "1.0.0",
+    "scheme": "driftless",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.driftless.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"],
+        "NSSupportsLiveActivities": true
+      }
     },
     "android": {
+      "package": "com.driftless.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FF8C2B",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "@bacons/apple-targets",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F5F2",
+          "dark": { "backgroundColor": "#141109" }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }

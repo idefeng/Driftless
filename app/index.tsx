@@ -1,0 +1,117 @@
+import React from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Screen } from '../src/components/Screen';
+import { BeatBars } from '../src/components/BeatBars';
+import { PlayPauseButton } from '../src/components/PlayPauseButton';
+import { StepButton } from '../src/components/StepButton';
+import { Wordmark } from '../src/components/Logo';
+import { Chip, RoundIconButton, MenuIcon, MiniBars, dot } from '../src/components/ui';
+import { useTheme } from '../src/theme/ThemeContext';
+import { fonts, brand } from '../src/theme/tokens';
+import { useCadence, SOUND_NAME } from '../src/state/CadenceContext';
+
+export default function Home() {
+  const { c, isDark } = useTheme();
+  const router = useRouter();
+  const { bpm, isPlaying, sound, coexist, step, togglePlay } = useCadence();
+
+  return (
+    <Screen>
+      {/* Header */}
+      <View style={styles.header}>
+        <Wordmark size={17} />
+        <RoundIconButton onPress={() => router.push('/plan')}>
+          <MenuIcon />
+        </RoundIconButton>
+      </View>
+
+      {/* Center: BPM + beat + chips + play */}
+      <View style={styles.center}>
+        <Text style={[styles.kicker, { color: c.textFaint }]}>当前步频 · SPM</Text>
+        <Text style={[styles.bpm, { color: c.textStrong }]}>{bpm}</Text>
+
+        <View style={{ marginTop: 22 }}>
+          <BeatBars
+            color={isDark ? brand.glow : brand.base}
+            centerColor={isDark ? brand.light : brand.deep}
+            height={50}
+            running={isPlaying}
+          />
+        </View>
+
+        <View style={styles.chips}>
+          <Pressable onPress={() => router.push('/sounds')}>
+            <Chip>
+              <MiniBars color={c.textFaint} heights={[6, 13, 9]} />
+              <Text style={[styles.chipText, { color: c.text }]}>{SOUND_NAME[sound]}</Text>
+            </Chip>
+          </Pressable>
+          <Pressable onPress={() => router.push('/coexist')}>
+            <Chip accent>
+              {dot(isDark ? brand.glow : brand.deep)}
+              <Text style={[styles.chipText, { color: c.brandText }]}>
+                {coexist === 'mix' ? '共存 · 边听歌边跑' : '独占模式'}
+              </Text>
+            </Chip>
+          </Pressable>
+        </View>
+
+        <View style={{ marginTop: 30 }}>
+          <PlayPauseButton playing={isPlaying} onPress={togglePlay} />
+        </View>
+      </View>
+
+      {/* Bottom: 1/4-screen blind-op ±1 buttons */}
+      <View style={styles.steps}>
+        <StepButton sign="−" label="减速 −1" onStep={() => step(-1)} />
+        <StepButton sign="+" label="加速 +1" onStep={() => step(1)} />
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 6,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  kicker: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+  },
+  bpm: {
+    fontFamily: fonts.displayExtraBold,
+    fontSize: 138,
+    lineHeight: 138 * 0.92,
+    letterSpacing: -6,
+    marginTop: 6,
+    fontVariant: ['tabular-nums'],
+    includeFontPadding: false,
+  },
+  chips: {
+    flexDirection: 'row',
+    gap: 9,
+    marginTop: 26,
+  },
+  chipText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+  },
+  steps: {
+    flexDirection: 'row',
+    gap: 14,
+    paddingHorizontal: 16,
+  },
+});

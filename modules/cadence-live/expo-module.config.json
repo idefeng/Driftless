@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["CadenceLiveModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.cadencelive.CadenceLiveModule"]
+  }
+}

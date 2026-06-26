@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["CadenceAudioModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.cadenceaudio.CadenceAudioModule"]
+  }
+}
