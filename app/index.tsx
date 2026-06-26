@@ -6,7 +6,7 @@ import { BeatBars } from '../src/components/BeatBars';
 import { PlayPauseButton } from '../src/components/PlayPauseButton';
 import { StepButton } from '../src/components/StepButton';
 import { Wordmark } from '../src/components/Logo';
-import { Chip, RoundIconButton, MenuIcon, MiniBars, dot } from '../src/components/ui';
+import { Chip, MenuIcon, MiniBars, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, SOUND_NAME, SOUNDS } from '../src/state/CadenceContext';
@@ -32,9 +32,6 @@ export default function Home() {
       {/* Header */}
       <View style={styles.header}>
         <Wordmark size={17} />
-        <RoundIconButton onPress={() => router.push('/plan')}>
-          <MenuIcon />
-        </RoundIconButton>
       </View>
 
       {/* Center: BPM + beat + chips + play */}
@@ -53,17 +50,23 @@ export default function Home() {
 
         <View style={styles.chips}>
           <Pressable onPress={cycleSound} onLongPress={() => router.push('/sounds')} delayLongPress={300}>
-            <Chip>
+            <Chip style={styles.compactChip}>
               <MiniBars color={c.textFaint} heights={[6, 13, 9]} />
               <Text style={[styles.chipText, { color: c.text }]}>{SOUND_NAME[sound]}</Text>
             </Chip>
           </Pressable>
           <Pressable onPress={toggleCoexist} onLongPress={() => router.push('/coexist')} delayLongPress={300}>
-            <Chip accent>
+            <Chip accent style={styles.compactChip}>
               {dot(isDark ? brand.glow : brand.deep)}
               <Text style={[styles.chipText, { color: c.brandText }]}>
-                {coexist === 'mix' ? '共存 · 边听歌边跑' : '独占模式'}
+                {coexist === 'mix' ? '共存' : '独占'}
               </Text>
+            </Chip>
+          </Pressable>
+          <Pressable onPress={() => router.push('/plan')}>
+            <Chip style={styles.compactChip}>
+              <MenuIcon />
+              <Text style={[styles.chipText, { color: c.text }]}>训练计划</Text>
             </Chip>
           </Pressable>
         </View>
@@ -113,12 +116,18 @@ const styles = StyleSheet.create({
   },
   chips: {
     flexDirection: 'row',
-    gap: 9,
+    justifyContent: 'center',
+    gap: 7,
     marginTop: 26,
+  },
+  // Compact override so all three chips stay on one line (no wrapping ever).
+  compactChip: {
+    paddingHorizontal: 12,
+    gap: 6,
   },
   chipText: {
     fontFamily: fonts.bodyBold,
-    fontSize: 13,
+    fontSize: 12.5,
   },
   steps: {
     flexDirection: 'row',
