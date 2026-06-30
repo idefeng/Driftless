@@ -11,10 +11,11 @@
 - EAS Project ID：`af22973b-c89f-4d59-b406-a2ae922cdc64`
 - EAS Update URL：`https://u.expo.dev/af22973b-c89f-4d59-b406-a2ae922cdc64`
 - OTA runtime 策略：`appVersion`（当前 `1.0.1` 原生包只接收同一 runtime 的 JS / 资源更新）
-- Google Play AAB：需使用 `production` profile 重新构建 `1.0.1` 包，历史 `1.0.0` AAB 未内置 OTA，不建议继续上传。
-- vivo/国内渠道 APK：需使用 `production-apk` profile 重新构建 `1.0.1` 包，历史 `1.0.0` APK 未内置 OTA，不建议继续上传。
-- 历史 Google Play EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/383bc1ab-6592-4d74-afa8-3c4552cc6aaf>
-- 历史 vivo APK EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/e5c7f2db-cb2f-43ca-94b1-1033dd4a278b>
+- Google Play AAB：<https://expo.dev/artifacts/eas/W4aR0acbrtnrOS8XigKVW_HWYDulTUuZmoxnOndVqCE.aab>（versionCode `5`）
+- vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）
+- Google Play EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/892875e3-f830-4beb-a77e-b032d8d0cc5f>
+- vivo APK EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/b7a5fbed-1d7b-4f54-9c3b-c8812177c1e3>
+- 历史 `1.0.0` AAB / APK 未内置 OTA，不建议继续上传。
 - 重要状态：旧包名 `com.driftless.app` 已被 Google Play 占用；当前统一改为 `com.idefeng.driftless`。不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或本地 `android/app/build/outputs/apk/release/app-release.apk`。
 
 ## 推荐上架顺序
@@ -174,17 +175,17 @@ vivo 等国内渠道需要 APK。当前已在 `eas.json` 中新增 `production-a
 pnpm exec eas build -p android --profile production-apk --non-interactive
 ```
 
-历史 vivo 可上传包（未内置 OTA，不建议继续上传）：
+当前 vivo 可上传包：
 
 ```text
-dist/driftless-1.0.0-android-v3-com-idefeng-driftless-vivo.apk
+https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk
 ```
 
 APK 校验结果：
 
 - 包名：`com.idefeng.driftless`
-- versionName：`1.0.0`
-- versionCode：`3`
+- versionName：`1.0.1`
+- versionCode：`6`
 - 签名证书 SHA-1：`d456c293e2a2ba027ca3971c8f72ca25bba45431`
 - 签名证书 SHA-256：`bdf98f6cc85f1265edeb832198cadc5eeb5a5fcbf157ce335414f1c8c8661012`
 

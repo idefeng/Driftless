@@ -26,7 +26,9 @@
 
 ## 安装包
 
-- 当前 OTA 基线版本：`1.0.1`，需使用 EAS 重新构建 AAB / APK 后再上传。
+- 当前 OTA 基线版本：`1.0.1`。
+- Google Play AAB：<https://expo.dev/artifacts/eas/W4aR0acbrtnrOS8XigKVW_HWYDulTUuZmoxnOndVqCE.aab>（versionCode `5`）。
+- vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）。
 - 历史 1.0.0 vivo/国内渠道 APK：`../../dist/driftless-1.0.0-android-v3-com-idefeng-driftless-vivo.apk`（未内置 OTA，不建议继续上传）。
 - 历史 1.0.0 Google Play AAB：`../../dist/driftless-1.0.0-android-v2-com-idefeng-driftless.aab`（未内置 OTA，不建议继续上传）。
 - 注意：不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或 `android/app/build/outputs/apk/release/app-release.apk`。
