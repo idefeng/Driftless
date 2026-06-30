@@ -8,9 +8,11 @@ import { PlayPauseButton } from '../src/components/PlayPauseButton';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, formatClock } from '../src/state/CadenceContext';
+import { useI18n } from '../src/i18n/I18nContext';
 
 export default function Running() {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const { plan, phaseIndex, phaseRemainingSec, bpm, isPlaying, step, togglePlay, skipPhase, stopWorkout } =
     useCadence();
@@ -71,7 +73,7 @@ export default function Running() {
       {/* center */}
       <View style={styles.center}>
         <Text style={[styles.kicker, { color: c.textFaint }]}>
-          {phase.name} · 第 {phaseIndex + 1} / {plan.length} 段
+          {t('running.phaseProgress', { name: phase.name, current: phaseIndex + 1, total: plan.length })}
         </Text>
         <Text style={[styles.bpm, { color: c.textStrong }]}>{bpm}</Text>
 
@@ -89,7 +91,7 @@ export default function Running() {
         {/* segment remaining + progress */}
         <View style={{ width: '100%', marginTop: 34 }}>
           <View style={styles.remainRow}>
-            <Text style={[styles.remainLabel, { color: c.textMuted }]}>本段剩余</Text>
+            <Text style={[styles.remainLabel, { color: c.textMuted }]}>{t('running.remaining')}</Text>
             <Text style={[styles.remainTime, { color: c.textStrong }]}>{formatClock(phaseRemainingSec)}</Text>
           </View>
           <View style={styles.segTrack}>
@@ -124,7 +126,9 @@ export default function Running() {
         {/* next-up chip */}
         {next && (
           <View style={[styles.nextChip, { backgroundColor: c.cardAlt }]}>
-            <Text style={{ fontFamily: fonts.bodySemiBold, fontSize: 12.5, color: c.textFaint }}>下一段</Text>
+            <Text style={{ fontFamily: fonts.bodySemiBold, fontSize: 12.5, color: c.textFaint }}>
+              {t('running.nextPhase')}
+            </Text>
             <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: c.brandText }}>
               {next.name} · {next.bpm} SPM
             </Text>
@@ -146,10 +150,10 @@ export default function Running() {
       {/* secondary actions */}
       <View style={styles.footer}>
         <Pressable onPress={skipPhase} hitSlop={8}>
-          <Text style={[styles.footerBtn, { color: c.textMuted }]}>跳过本段</Text>
+          <Text style={[styles.footerBtn, { color: c.textMuted }]}>{t('running.skipPhase')}</Text>
         </Pressable>
         <Pressable onPress={onClose} hitSlop={8}>
-          <Text style={[styles.footerBtn, { color: c.textMuted }]}>结束训练</Text>
+          <Text style={[styles.footerBtn, { color: c.textMuted }]}>{t('running.endWorkout')}</Text>
         </Pressable>
       </View>
     </Screen>

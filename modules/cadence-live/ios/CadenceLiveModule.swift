@@ -9,6 +9,11 @@ struct LiveSessionRecord: Record {
   @Field var phaseCount: Int = 1
   @Field var endTimeMs: Double = 0
   @Field var running: Bool = false
+  @Field var phaseProgressText: String = ""
+  @Field var remainingLabel: String = "Left"
+  @Field var skipActionLabel: String = "Skip phase"
+  @Field var channelName: String = "Run cadence"
+  @Field var channelDescription: String = "Active cadence and controls"
 }
 
 public class CadenceLiveModule: Module {
@@ -69,7 +74,9 @@ public class CadenceLiveModule: Module {
       phaseIndex: s.phaseIndex,
       phaseCount: s.phaseCount,
       endTime: Date(timeIntervalSince1970: s.endTimeMs / 1000.0),
-      running: s.running
+      running: s.running,
+      phaseProgressText: s.phaseProgressText,
+      remainingLabel: s.remainingLabel
     )
   }
 

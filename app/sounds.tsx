@@ -6,6 +6,8 @@ import { CheckIcon, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, SOUNDS, SoundId } from '../src/state/CadenceContext';
+import { useI18n } from '../src/i18n/I18nContext';
+import { getSoundDesc, getSoundName } from '../src/i18n/labels';
 
 const ICON_BARS: Record<SoundId, number[]> = {
   beep: [10, 20, 14],
@@ -15,11 +17,12 @@ const ICON_BARS: Record<SoundId, number[]> = {
 
 export default function Sounds() {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const { sound, setSound } = useCadence();
 
   return (
     <Screen>
-      <SubHeader title="节拍音效" subtitle="选一个在音乐背景里也清晰可辨的音色" />
+      <SubHeader title={t('sound.title')} subtitle={t('sound.subtitle')} />
 
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {SOUNDS.map((s) => {
@@ -60,8 +63,10 @@ export default function Sounds() {
                 </View>
 
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.name, { color: c.text }]}>{s.name}</Text>
-                  <Text style={[styles.desc, { color: selected ? c.brandText : c.textFaint }]}>{s.desc}</Text>
+                  <Text style={[styles.name, { color: c.text }]}>{getSoundName(t, s.id)}</Text>
+                  <Text style={[styles.desc, { color: selected ? c.brandText : c.textFaint }]}>
+                    {getSoundDesc(t, s.id)}
+                  </Text>
                 </View>
 
                 <View
@@ -84,7 +89,9 @@ export default function Sounds() {
         <View style={[styles.note, { backgroundColor: c.cardAlt }]}>
           <View style={{ marginTop: 5 }}>{dot(brand.base)}</View>
           <Text style={[styles.noteText, { color: c.textMuted }]}>
-            所有音效<Text style={{ color: c.text, fontFamily: fonts.bodyBold }}>首尾零静音</Text>、单采样 &lt; 80ms、已归一化音量——低延时、高穿透，混音也不糊。
+            {t('sound.note.beforeBold')}
+            <Text style={{ color: c.text, fontFamily: fonts.bodyBold }}>{t('sound.note.bold')}</Text>
+            {t('sound.note.afterBold')}
           </Text>
         </View>
       </ScrollView>

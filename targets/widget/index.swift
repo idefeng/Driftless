@@ -114,7 +114,7 @@ private struct LockScreenView: View {
         }
         Spacer()
         HStack(spacing: 4) {
-          Text("剩余").font(.system(size: 12)).foregroundStyle(Color.warmMuted)
+          Text(state.remainingLabel).font(.system(size: 12)).foregroundStyle(Color.warmMuted)
           countdownText(state.endTime)
             .font(.system(size: 13, weight: .semibold))
             .foregroundStyle(Color.warmMuted)
@@ -152,7 +152,7 @@ struct DriftlessLiveActivity: Widget {
         DynamicIslandExpandedRegion(.leading) {
           VStack(alignment: .leading, spacing: 2) {
             Text(context.state.phaseName).font(.system(size: 13, weight: .bold)).foregroundStyle(Color.brandLight)
-            Text("\(context.state.phaseIndex + 1)/\(context.state.phaseCount) 段").font(.system(size: 11)).foregroundStyle(Color.warmMuted)
+            Text(context.state.phaseProgressText).font(.system(size: 11)).foregroundStyle(Color.warmMuted)
           }
         }
         DynamicIslandExpandedRegion(.trailing) {

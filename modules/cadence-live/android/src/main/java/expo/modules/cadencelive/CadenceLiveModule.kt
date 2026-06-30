@@ -17,6 +17,11 @@ class LiveSessionRecord : Record {
   @Field var phaseCount: Int = 1
   @Field var endTimeMs: Double = 0.0
   @Field var running: Boolean = false
+  @Field var phaseProgressText: String = ""
+  @Field var remainingLabel: String = "Left"
+  @Field var skipActionLabel: String = "Skip phase"
+  @Field var channelName: String = "Run cadence"
+  @Field var channelDescription: String = "Active cadence and controls"
 }
 
 class CadenceLiveModule : Module() {
@@ -67,6 +72,11 @@ class CadenceLiveModule : Module() {
         putExtra("phaseCount", it.phaseCount)
         putExtra("endTimeMs", it.endTimeMs)
         putExtra("running", it.running)
+        putExtra("phaseProgressText", it.phaseProgressText)
+        putExtra("remainingLabel", it.remainingLabel)
+        putExtra("skipActionLabel", it.skipActionLabel)
+        putExtra("channelName", it.channelName)
+        putExtra("channelDescription", it.channelDescription)
       }
     }
   }

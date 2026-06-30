@@ -20,8 +20,13 @@ import {
 } from '@expo-google-fonts/manrope';
 import { ThemeProvider } from '../src/theme/ThemeContext';
 import { CadenceProvider } from '../src/state/CadenceContext';
+import { I18nProvider } from '../src/i18n/I18nContext';
+import { OtaUpdateGate } from '../src/updates/OtaUpdateGate';
+import { logger } from '../src/utils/logger';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+void SplashScreen.preventAutoHideAsync().catch((error) => {
+  logger.warn('启动屏幕保持失败。', error);
+});
 
 export default function RootLayout() {
   const [loaded] = useSora({
@@ -38,7 +43,11 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync().catch(() => {});
+    if (!loaded) return;
+
+    void SplashScreen.hideAsync().catch((error) => {
+      logger.warn('启动屏幕隐藏失败。', error);
+    });
   }, [loaded]);
 
   if (!loaded) return <View style={{ flex: 1, backgroundColor: '#F7F5F2' }} />;
@@ -46,21 +55,24 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <CadenceProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'slide_from_right',
-              contentStyle: { backgroundColor: '#F7F5F2' },
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="sounds" options={{ presentation: 'card' }} />
-            <Stack.Screen name="coexist" options={{ presentation: 'card' }} />
-            <Stack.Screen name="plan" options={{ presentation: 'card' }} />
-            <Stack.Screen name="running" options={{ animation: 'slide_from_bottom' }} />
-          </Stack>
-        </CadenceProvider>
+        <I18nProvider>
+          <CadenceProvider>
+            <OtaUpdateGate />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                contentStyle: { backgroundColor: '#F7F5F2' },
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="sounds" options={{ presentation: 'card' }} />
+              <Stack.Screen name="coexist" options={{ presentation: 'card' }} />
+              <Stack.Screen name="plan" options={{ presentation: 'card' }} />
+              <Stack.Screen name="running" options={{ animation: 'slide_from_bottom' }} />
+            </Stack>
+          </CadenceProvider>
+        </I18nProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

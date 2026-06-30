@@ -8,9 +8,11 @@ import { MiniStepper } from '../src/components/MiniStepper';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, formatClock } from '../src/state/CadenceContext';
+import { useI18n } from '../src/i18n/I18nContext';
 
 export default function Plan() {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const { plan, startWorkout, addPhase, removePhase, updatePhase } = useCadence();
 
@@ -25,7 +27,7 @@ export default function Plan() {
 
   return (
     <Screen>
-      <SubHeader title="训练计划" subtitle="间歇步频流水线 · 阶段间无缝换算" />
+      <SubHeader title={t('plan.title')} subtitle={t('plan.subtitle')} />
 
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 20 }} showsVerticalScrollIndicator={false}>
         {plan.map((p, i) => {
@@ -51,8 +53,8 @@ export default function Plan() {
                   <View style={{ flex: 1 }}>
                     <TextInput
                       value={p.name}
-                      onChangeText={(t) => updatePhase(p.id, { name: t })}
-                      placeholder="阶段名称"
+                      onChangeText={(text) => updatePhase(p.id, { name: text })}
+                      placeholder={t('plan.placeholder')}
                       placeholderTextColor={c.textFaint}
                       maxLength={12}
                       style={[styles.phaseName, styles.phaseNameInput, { color: c.text, borderBottomColor: c.divider }]}
@@ -68,12 +70,12 @@ export default function Plan() {
                 <View style={[styles.phaseControls, { borderTopColor: c.divider }]}>
                   <MiniStepper
                     value={formatClock(p.durationSec)}
-                    caption="时长"
+                    caption={t('plan.duration')}
                     onStep={(d) => updatePhase(p.id, { durationSec: p.durationSec + d * 30 })}
                   />
                   <MiniStepper
                     value={String(p.bpm)}
-                    caption="步频"
+                    caption={t('plan.cadence')}
                     onStep={(d) => updatePhase(p.id, { bpm: p.bpm + d })}
                   />
                 </View>
@@ -82,9 +84,9 @@ export default function Plan() {
               {i < plan.length - 1 && (() => {
                 const delta = plan[i + 1].bpm - p.bpm;
                 const label =
-                  delta > 0 ? `↑ 无缝换算 +${delta}`
-                  : delta < 0 ? `↓ 无缝换算 −${-delta}`
-                  : '无缝换算 · 持平';
+                  delta > 0 ? t('plan.connectorUp', { delta })
+                  : delta < 0 ? t('plan.connectorDown', { delta: -delta })
+                  : t('plan.connectorFlat');
                 return (
                   <View style={styles.connector}>
                     <View style={[styles.connectorLine, { backgroundColor: c.trackInactive }]} />
@@ -107,18 +109,20 @@ export default function Plan() {
             { borderColor: isDark ? '#3A3328' : '#D8D1C6', opacity: pressed ? 0.6 : 1 },
           ]}
         >
-          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.textFaint }}>+ 添加阶段</Text>
+          <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.textFaint }}>{t('plan.addPhase')}</Text>
         </Pressable>
 
         {plan.length > 1 && (
-          <Text style={[styles.deleteHint, { color: c.textFaint }]}>长按阶段卡片可删除</Text>
+          <Text style={[styles.deleteHint, { color: c.textFaint }]}>{t('plan.deleteHint')}</Text>
         )}
       </ScrollView>
 
       <View style={{ paddingHorizontal: 16 }}>
         <View style={styles.summary}>
-          <Text style={[styles.summaryText, { color: c.textFaint }]}>总时长 {formatClock(totalSec)}</Text>
-          <Text style={[styles.summaryText, { color: c.textFaint }]}>平均 ~{avg} SPM</Text>
+          <Text style={[styles.summaryText, { color: c.textFaint }]}>
+            {t('plan.totalDuration', { duration: formatClock(totalSec) })}
+          </Text>
+          <Text style={[styles.summaryText, { color: c.textFaint }]}>{t('plan.average', { avg })}</Text>
         </View>
         <Pressable onPress={onStart}>
           <LinearGradient
@@ -128,7 +132,7 @@ export default function Plan() {
             style={styles.startBtn}
           >
             <View style={styles.startTri} />
-            <Text style={styles.startText}>开始训练</Text>
+            <Text style={styles.startText}>{t('plan.start')}</Text>
           </LinearGradient>
         </Pressable>
       </View>

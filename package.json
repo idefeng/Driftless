@@ -1,6 +1,6 @@
 {
   "name": "driftless-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@10.32.1",
   "main": "expo-router/entry",
   "dependencies": {
@@ -13,10 +13,12 @@
     "expo-keep-awake": "~56.0.3",
     "expo-linear-gradient": "~56.0.4",
     "expo-linking": "~56.0.14",
+    "expo-localization": "~56.0.6",
     "expo-router": "~56.2.11",
     "expo-splash-screen": "~56.0.10",
     "expo-status-bar": "~56.0.4",
     "expo-system-ui": "~56.0.5",
+    "expo-updates": "~56.0.19",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
@@ -30,13 +32,21 @@
   "devDependencies": {
     "@bacons/apple-targets": "^4.0.7",
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "56.0.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "lint": "pnpm run typecheck",
+    "test": "pnpm run test:i18n && pnpm run test:ota",
+    "test:i18n": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --experimental-strip-types src/i18n/language.test.mjs",
+    "test:ota": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --experimental-strip-types src/updates/otaUpdate.test.mjs",
+    "ota:preview": "eas update --channel preview",
+    "ota:prod": "eas update --channel production"
   },
   "private": true
 }

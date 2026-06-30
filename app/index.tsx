@@ -9,10 +9,13 @@ import { Wordmark } from '../src/components/Logo';
 import { Chip, MenuIcon, MiniBars, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
-import { useCadence, SOUND_NAME, SOUNDS } from '../src/state/CadenceContext';
+import { useCadence, SOUNDS } from '../src/state/CadenceContext';
+import { useI18n } from '../src/i18n/I18nContext';
+import { getSoundShortName } from '../src/i18n/labels';
 
 export default function Home() {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   const { bpm, isPlaying, sound, coexist, step, togglePlay, setSound, setCoexist } = useCadence();
 
@@ -36,7 +39,7 @@ export default function Home() {
 
       {/* Center: BPM + beat + chips + play */}
       <View style={styles.center}>
-        <Text style={[styles.kicker, { color: c.textFaint }]}>当前步频 · SPM</Text>
+        <Text style={[styles.kicker, { color: c.textFaint }]}>{t('home.currentCadence')}</Text>
         <Text style={[styles.bpm, { color: c.textStrong }]}>{bpm}</Text>
 
         <View style={{ marginTop: 22 }}>
@@ -52,21 +55,21 @@ export default function Home() {
           <Pressable onPress={cycleSound} onLongPress={() => router.push('/sounds')} delayLongPress={300}>
             <Chip style={styles.compactChip}>
               <MiniBars color={c.textFaint} heights={[6, 13, 9]} />
-              <Text style={[styles.chipText, { color: c.text }]}>{SOUND_NAME[sound]}</Text>
+              <Text style={[styles.chipText, { color: c.text }]}>{getSoundShortName(t, sound)}</Text>
             </Chip>
           </Pressable>
           <Pressable onPress={toggleCoexist} onLongPress={() => router.push('/coexist')} delayLongPress={300}>
             <Chip accent style={styles.compactChip}>
               {dot(isDark ? brand.glow : brand.deep)}
               <Text style={[styles.chipText, { color: c.brandText }]}>
-                {coexist === 'mix' ? '共存' : '独占'}
+                {coexist === 'mix' ? t('home.coexistMix') : t('home.coexistExclusive')}
               </Text>
             </Chip>
           </Pressable>
           <Pressable onPress={() => router.push('/plan')}>
             <Chip style={styles.compactChip}>
               <MenuIcon />
-              <Text style={[styles.chipText, { color: c.text }]}>训练计划</Text>
+              <Text style={[styles.chipText, { color: c.text }]}>{t('home.trainingPlan')}</Text>
             </Chip>
           </Pressable>
         </View>
@@ -78,8 +81,8 @@ export default function Home() {
 
       {/* Bottom: 1/4-screen blind-op ±1 buttons */}
       <View style={styles.steps}>
-        <StepButton sign="−" label="减速 −1" onStep={() => step(-1)} />
-        <StepButton sign="+" label="加速 +1" onStep={() => step(1)} />
+        <StepButton sign="−" label={t('home.slowDown')} onStep={() => step(-1)} />
+        <StepButton sign="+" label={t('home.speedUp')} onStep={() => step(1)} />
       </View>
     </Screen>
   );

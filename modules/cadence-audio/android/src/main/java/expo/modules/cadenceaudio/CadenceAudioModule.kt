@@ -34,9 +34,9 @@ private fun clampBpm(b: Double): Double = min(250.0, max(100.0, Math.round(b).to
  * interval at every beat — zero accumulating drift, sub-sample jitter. The blocking
  * `AudioTrack.write` paces the loop to the hardware clock.
  *
- * We never request audio focus, so beats mix on top of any music/podcast/video
- * (PRD §3.2 coexist). USAGE_ASSISTANCE_SONIFICATION marks them as cues so the
- * system won't arbitrarily duck them.
+ * Beats route through USAGE_MEDIA so hardware volume keys control them like
+ * music. Audio focus is applied per mode: no focus for mix, GAIN for exclusive,
+ * and TRANSIENT_MAY_DUCK when the user opts into ducking.
  */
 class CadenceAudioModule : Module() {
   // ── Control state (written by JS thread, read by render thread) ──────────

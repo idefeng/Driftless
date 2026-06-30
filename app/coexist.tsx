@@ -6,11 +6,13 @@ import { Toggle } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, CoexistMode } from '../src/state/CadenceContext';
+import { useI18n } from '../src/i18n/I18nContext';
 
 const MUSIC_BARS = [8, 16, 11, 19, 7, 14, 20, 10, 16, 8, 13, 18];
 
 export default function Coexist() {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const { coexist, setCoexist, beatVolume, setBeatVolume, ducking, setDucking, keepAwake, setKeepAwake } =
     useCadence();
 
@@ -46,20 +48,20 @@ export default function Coexist() {
 
   return (
     <Screen>
-      <SubHeader title="音频共存" />
+      <SubHeader title={t('coexist.title')} />
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }} showsVerticalScrollIndicator={false}>
         {/* mode switch */}
         <View style={[styles.segTrack, { backgroundColor: c.trackInactive }]}>
-          {seg('mix', '共存（混音）')}
-          {seg('exclusive', '独占')}
+          {seg('mix', t('coexist.mixSegment'))}
+          {seg('exclusive', t('coexist.exclusiveSegment'))}
         </View>
 
         {/* layering visualization */}
         <View style={[styles.card, { backgroundColor: c.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
           <View style={styles.vizRow}>
             <Text style={[styles.vizLabel, { color: c.textFaint }]}>
-              音乐 / 播客{isMix ? '' : ' · 已暂停'}
+              {t('coexist.mediaLabel')}{isMix ? '' : t('coexist.pausedSuffix')}
             </Text>
             <View style={[styles.vizBars, !isMix && { opacity: 0.3 }]}>
               {MUSIC_BARS.map((h, i) => (
@@ -80,13 +82,19 @@ export default function Coexist() {
           </View>
           {isMix ? (
             <Text style={[styles.cardNote, { color: c.textFaint }]}>
-              节拍声<Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>叠加</Text>在你正在听的音乐之上，
-              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>绝不打断、绝不暂停</Text>其它 App。
+              {t('coexist.mixNote.beforeBold')}
+              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>{t('coexist.mixNote.boldA')}</Text>
+              {t('coexist.mixNote.middle')}
+              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>{t('coexist.mixNote.boldB')}</Text>
+              {t('coexist.mixNote.afterBold')}
             </Text>
           ) : (
             <Text style={[styles.cardNote, { color: c.textFaint }]}>
-              开始播放时<Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>暂停其它 App</Text> 的音乐 / 播客，
-              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>只播放节拍声</Text>；切回共存即可恢复叠加。
+              {t('coexist.exclusiveNote.beforeBold')}
+              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>{t('coexist.exclusiveNote.boldA')}</Text>
+              {t('coexist.exclusiveNote.middle')}
+              <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>{t('coexist.exclusiveNote.boldB')}</Text>
+              {t('coexist.exclusiveNote.afterBold')}
             </Text>
           )}
         </View>
@@ -96,7 +104,7 @@ export default function Coexist() {
           {/* beat volume */}
           <View style={[styles.groupRow, { borderBottomColor: c.divider, borderBottomWidth: 1 }]}>
             <View style={styles.rowHead}>
-              <Text style={[styles.rowTitle, { color: c.text }]}>节拍音量（独立于媒体）</Text>
+              <Text style={[styles.rowTitle, { color: c.text, flex: 1 }]}>{t('coexist.volumeTitle')}</Text>
               <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: c.brandText }}>{volPct}%</Text>
             </View>
             <View style={styles.sliderTrack}>
@@ -118,8 +126,8 @@ export default function Coexist() {
           {/* ducking */}
           <View style={[styles.groupRow, styles.toggleRow, { borderBottomColor: c.divider, borderBottomWidth: 1 }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { color: c.text }]}>轻压背景音 Ducking</Text>
-              <Text style={[styles.rowSub, { color: c.textFaint }]}>默认关闭，避免全程压低音乐</Text>
+              <Text style={[styles.rowTitle, { color: c.text }]}>{t('coexist.duckingTitle')}</Text>
+              <Text style={[styles.rowSub, { color: c.textFaint }]}>{t('coexist.duckingSubtitle')}</Text>
             </View>
             <Toggle value={ducking} onChange={setDucking} />
           </View>
@@ -127,8 +135,8 @@ export default function Coexist() {
           {/* keep awake */}
           <View style={[styles.groupRow, styles.toggleRow]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, { color: c.text }]}>屏幕常亮</Text>
-              <Text style={[styles.rowSub, { color: c.textFaint }]}>夜跑 / 强光下随时看清步频</Text>
+              <Text style={[styles.rowTitle, { color: c.text }]}>{t('coexist.keepAwakeTitle')}</Text>
+              <Text style={[styles.rowSub, { color: c.textFaint }]}>{t('coexist.keepAwakeSubtitle')}</Text>
             </View>
             <Toggle value={keepAwake} onChange={setKeepAwake} />
           </View>

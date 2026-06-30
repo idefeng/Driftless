@@ -2,7 +2,10 @@
   "expo": {
     "name": "Driftless",
     "slug": "driftless",
-    "version": "1.0.0",
+    "version": "1.0.1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "scheme": "driftless",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,14 +13,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.driftless.app",
+      "bundleIdentifier": "com.idefeng.driftless",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
+        "UIBackgroundModes": [
+          "audio"
+        ],
         "NSSupportsLiveActivities": true
       }
     },
     "android": {
-      "package": "com.driftless.app",
+      "package": "com.idefeng.driftless",
       "adaptiveIcon": {
         "backgroundColor": "#F7F5F2",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -45,10 +50,35 @@
             "backgroundColor": "#141109"
           }
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/af22973b-c89f-4d59-b406-a2ae922cdc64",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "bundleIdentifier": "com.idefeng.driftless.widget",
+                  "targetName": "DriftlessWidget"
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "af22973b-c89f-4d59-b406-a2ae922cdc64"
+      }
+    },
+    "owner": "idefeng"
   }
 }

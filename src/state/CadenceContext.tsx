@@ -13,6 +13,9 @@ import { Platform, PermissionsAndroid } from 'react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import CadenceAudio from '../../modules/cadence-audio';
 import CadenceLive, { LiveSessionState } from '../../modules/cadence-live';
+import { useI18n } from '../i18n/I18nContext';
+import type { Translator } from '../i18n/resources';
+import { logger } from '../utils/logger';
 
 const KEEP_AWAKE_TAG = 'driftless-cadence';
 
@@ -21,14 +24,12 @@ export type CoexistMode = 'mix' | 'exclusive';
 
 export interface SoundDef {
   id: SoundId;
-  name: string;
-  desc: string;
 }
 
 export const SOUNDS: SoundDef[] = [
-  { id: 'beep', name: '电子嘀声', desc: '高频穿透 · 嘈杂环境首选' },
-  { id: 'woodfish', name: '木鱼', desc: '温暖瞬态 · 音乐背景中清晰' },
-  { id: 'click', name: '标准节拍器', desc: '经典鼓点 · 强拍分明' },
+  { id: 'beep' },
+  { id: 'woodfish' },
+  { id: 'click' },
 ];
 
 export interface PlanPhase {
@@ -39,11 +40,13 @@ export interface PlanPhase {
   color: string; // accent bar color
 }
 
-export const DEFAULT_PLAN: PlanPhase[] = [
-  { id: 'p1', name: '热身', durationSec: 5 * 60, bpm: 170, color: brand.light },
-  { id: 'p2', name: '巡航', durationSec: 20 * 60, bpm: 180, color: brand.base },
-  { id: 'p3', name: '冲刺', durationSec: 5 * 60, bpm: 190, color: brand.deep },
-];
+export function createDefaultPlan(t: Translator): PlanPhase[] {
+  return [
+    { id: 'p1', name: t('plan.defaultWarmup'), durationSec: 5 * 60, bpm: 170, color: brand.light },
+    { id: 'p2', name: t('plan.defaultCruise'), durationSec: 20 * 60, bpm: 180, color: brand.base },
+    { id: 'p3', name: t('plan.defaultSprint'), durationSec: 5 * 60, bpm: 190, color: brand.deep },
+  ];
+}
 
 /**
  * Engine facade — routes playback to the native (iOS/Android) or WebAudio
@@ -98,6 +101,7 @@ interface CadenceApi extends CadenceState {
 const Ctx = createContext<CadenceApi | null>(null);
 
 export function CadenceProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const schedulerRef = useRef(new CadenceScheduler());
   const audioReady = CadenceAudio.isAvailable();
 
@@ -136,7 +140,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   const [beatVolume, setBeatVolumeState] = useState(0.72);
   const [ducking, setDuckingState] = useState(false);
   const [keepAwake, setKeepAwake] = useState(true);
-  const [plan, setPlan] = useState<PlanPhase[]>(DEFAULT_PLAN);
+  const [plan, setPlan] = useState<PlanPhase[]>(() => createDefaultPlan(t));
 
   const [running, setRunning] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
@@ -207,25 +211,28 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     [engine],
   );
 
-  // Keep the screen awake while the metronome is sounding (PRD §3.2 "常亮"),
-  // but only when the user opted in. Released as soon as playback stops or the
-  // toggle is turned off so we never hold the lock longer than needed.
+  // 仅在用户开启常亮且节拍播放时保持屏幕唤醒，停止播放后立即释放。
   useEffect(() => {
     if (keepAwake && isPlaying) {
-      activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+      void activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch((error) => {
+        logger.warn('屏幕常亮启用失败。', error);
+      });
       return () => {
-        deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
+        void deactivateKeepAwake(KEEP_AWAKE_TAG).catch((error) => {
+          logger.warn('屏幕常亮释放失败。', error);
+        });
       };
     }
   }, [keepAwake, isPlaying]);
 
-  // Android 13+ needs the runtime POST_NOTIFICATIONS grant before the live
-  // workout's foreground-service notification (lock-screen card) can show.
+  // Android 13+ 需要运行时通知授权，前台服务卡片才能正常显示。
   useEffect(() => {
     if (Platform.OS === 'android' && Platform.Version >= 33) {
-      PermissionsAndroid.request(
+      void PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      ).catch(() => {});
+      ).catch((error) => {
+        logger.warn('通知权限请求失败。', error);
+      });
     }
   }, []);
 
@@ -281,7 +288,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       const last = prev[prev.length - 1];
       const next: PlanPhase = {
         id: `p${Date.now()}`,
-        name: `阶段 ${prev.length + 1}`,
+        name: t('plan.defaultPhase', { number: prev.length + 1 }),
         durationSec: 5 * 60,
         // Start from the previous phase's rate; the user edits it freely.
         bpm: clampBpm(last?.bpm ?? 180),
@@ -289,7 +296,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       };
       return [...prev, next];
     });
-  }, []);
+  }, [t]);
 
   const removePhase = useCallback((id: string) => {
     // Keep at least one phase so a workout always has something to run.
@@ -319,6 +326,11 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     phaseCount: plan.length,
     endTimeMs: 0,
     running: false,
+    phaseProgressText: '',
+    remainingLabel: t('live.remaining'),
+    skipActionLabel: t('live.skipPhase'),
+    channelName: t('live.channelName'),
+    channelDescription: t('live.channelDescription'),
   });
   // During a workout: show the phase, its index, and a live countdown. On the
   // home screen (free metronome): just the rate — phaseCount 1 tells the native
@@ -331,6 +343,11 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
         phaseCount: plan.length,
         endTimeMs: phaseEndRef.current,
         running: true,
+        phaseProgressText: t('live.phaseProgress', { current: phaseIndex + 1, total: plan.length }),
+        remainingLabel: t('live.remaining'),
+        skipActionLabel: t('live.skipPhase'),
+        channelName: t('live.channelName'),
+        channelDescription: t('live.channelDescription'),
       }
     : {
         bpm,
@@ -339,6 +356,11 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
         phaseCount: 1,
         endTimeMs: 0,
         running: isPlaying,
+        phaseProgressText: '',
+        remainingLabel: t('live.remaining'),
+        skipActionLabel: t('live.skipPhase'),
+        channelName: t('live.channelName'),
+        channelDescription: t('live.channelDescription'),
       };
 
   // Lock-screen ±1 / skip controls feed back into cadence state.
@@ -364,7 +386,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isPlaying) CadenceLive.update(liveStateRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bpm, phaseIndex, running, isPlaying]);
+  }, [bpm, phaseIndex, running, isPlaying, t]);
 
   // running countdown
   useEffect(() => {
@@ -426,12 +448,6 @@ export function useCadence() {
   if (!v) throw new Error('useCadence must be used within CadenceProvider');
   return v;
 }
-
-export const SOUND_NAME: Record<SoundId, string> = {
-  beep: '电子嘀声',
-  woodfish: '木鱼',
-  click: '标准节拍器',
-};
 
 export function formatClock(totalSec: number): string {
   const m = Math.floor(totalSec / 60);
