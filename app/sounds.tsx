@@ -13,6 +13,8 @@ const ICON_BARS: Record<SoundId, number[]> = {
   beep: [10, 20, 14],
   woodfish: [14, 22, 11],
   click: [18, 9, 16],
+  bubble: [12, 18, 22],
+  droplet: [20, 12, 17],
 };
 
 export default function Sounds() {

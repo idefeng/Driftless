@@ -5,18 +5,24 @@ const SOUND_NAME_KEYS: Record<SoundId, I18nKey> = {
   beep: 'sound.beep.name',
   woodfish: 'sound.woodfish.name',
   click: 'sound.click.name',
+  bubble: 'sound.bubble.name',
+  droplet: 'sound.droplet.name',
 };
 
 const SOUND_DESC_KEYS: Record<SoundId, I18nKey> = {
   beep: 'sound.beep.desc',
   woodfish: 'sound.woodfish.desc',
   click: 'sound.click.desc',
+  bubble: 'sound.bubble.desc',
+  droplet: 'sound.droplet.desc',
 };
 
 const SOUND_SHORT_KEYS: Record<SoundId, I18nKey> = {
   beep: 'sound.beep.short',
   woodfish: 'sound.woodfish.short',
   click: 'sound.click.short',
+  bubble: 'sound.bubble.short',
+  droplet: 'sound.droplet.short',
 };
 
 export function getSoundName(t: Translator, id: SoundId): string {

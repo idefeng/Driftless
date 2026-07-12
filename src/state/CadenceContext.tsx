@@ -19,7 +19,7 @@ import { logger } from '../utils/logger';
 
 const KEEP_AWAKE_TAG = 'driftless-cadence';
 
-export type SoundId = 'beep' | 'woodfish' | 'click';
+export type SoundId = 'beep' | 'woodfish' | 'click' | 'bubble' | 'droplet';
 export type CoexistMode = 'mix' | 'exclusive';
 
 export interface SoundDef {
@@ -30,6 +30,8 @@ export const SOUNDS: SoundDef[] = [
   { id: 'beep' },
   { id: 'woodfish' },
   { id: 'click' },
+  { id: 'bubble' },
+  { id: 'droplet' },
 ];
 
 export interface PlanPhase {

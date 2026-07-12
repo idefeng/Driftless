@@ -21,6 +21,8 @@ const GRAINS: Record<CadenceSoundId, ClickGrain> = {
   beep: { freq: 1900, decay: 0.012, dur: 0.035, noise: 0 },
   woodfish: { freq: 720, decay: 0.018, dur: 0.055, noise: 0.06 },
   click: { freq: 3000, decay: 0.004, dur: 0.014, noise: 0.15 },
+  bubble: { freq: 480, decay: 0.025, dur: 0.075, noise: 0.22 },
+  droplet: { freq: 2600, decay: 0.02, dur: 0.05, noise: 0.03 },
 };
 
 class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
