@@ -10,6 +10,9 @@ import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, formatClock } from '../src/state/CadenceContext';
 import { useI18n } from '../src/i18n/I18nContext';
 
+// Keeps the plan name short enough that the Home chip never has to truncate it.
+const PLAN_NAME_MAX_LENGTH = 6;
+
 export default function Plan() {
   const { c, isDark } = useTheme();
   const { t } = useI18n();
@@ -36,9 +39,17 @@ export default function Plan() {
           onChangeText={(text) => renamePlan(activePlan.id, text)}
           placeholder={t('plan.namePlaceholder')}
           placeholderTextColor={c.textFaint}
-          maxLength={16}
+          maxLength={PLAN_NAME_MAX_LENGTH}
           style={[styles.planName, { color: c.text, borderBottomColor: c.divider }]}
         />
+        <Text
+          style={[
+            styles.planNameCounter,
+            { color: activePlan.name.length >= PLAN_NAME_MAX_LENGTH ? c.brandText : c.textFaint },
+          ]}
+        >
+          {t('plan.nameCounter', { count: activePlan.name.length, max: PLAN_NAME_MAX_LENGTH })}
+        </Text>
 
         {plan.map((p, i) => {
           const active = i === activeIdx;
@@ -156,6 +167,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     borderBottomWidth: 1,
     paddingBottom: 6,
+  },
+  planNameCounter: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 11.5,
+    textAlign: 'right',
+    marginTop: 4,
     marginBottom: 16,
   },
   phase: {
