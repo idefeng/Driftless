@@ -107,6 +107,54 @@ export function MenuIcon() {
   );
 }
 
+export function ChevronRightIcon() {
+  const { c } = useTheme();
+  return (
+    <Svg width={9} height={15} viewBox="0 0 9 15" fill="none">
+      <Path
+        d="M1 1l6 6.5L1 14"
+        stroke={c.textFaint}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+const GEAR_TEETH = Array.from({ length: 8 }, (_, i) => {
+  const angle = (i * Math.PI * 2) / 8;
+  const rInner = 7;
+  const rOuter = 10;
+  return {
+    x1: 11 + Math.cos(angle) * rInner,
+    y1: 11 + Math.sin(angle) * rInner,
+    x2: 11 + Math.cos(angle) * rOuter,
+    y2: 11 + Math.sin(angle) * rOuter,
+  };
+});
+
+export function SettingsIcon() {
+  const { c } = useTheme();
+  return (
+    <Svg width={20} height={20} viewBox="0 0 22 22" fill="none">
+      {GEAR_TEETH.map((line, i) => (
+        <Line
+          key={i}
+          x1={line.x1}
+          y1={line.y1}
+          x2={line.x2}
+          y2={line.y2}
+          stroke={c.textFaint}
+          strokeWidth={2}
+          strokeLinecap="round"
+        />
+      ))}
+      <Circle cx={11} cy={11} r={5} stroke={c.textFaint} strokeWidth={2} />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ color = '#fff', size = 17 }: { color?: string; size?: number }) {
   return (
     <Svg width={size} height={(size * 13) / 17} viewBox="0 0 17 13" fill="none">

@@ -6,7 +6,7 @@ import { BeatBars } from '../src/components/BeatBars';
 import { PlayPauseButton } from '../src/components/PlayPauseButton';
 import { StepButton } from '../src/components/StepButton';
 import { Wordmark } from '../src/components/Logo';
-import { Chip, MenuIcon, MiniBars, dot } from '../src/components/ui';
+import { Chip, RoundIconButton, MenuIcon, SettingsIcon, MiniBars, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, SOUNDS } from '../src/state/CadenceContext';
@@ -17,7 +17,8 @@ export default function Home() {
   const { c, isDark } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
-  const { bpm, isPlaying, sound, coexist, step, togglePlay, setSound, setCoexist } = useCadence();
+  const { bpm, isPlaying, sound, coexist, plans, activePlanId, setActivePlanId, step, togglePlay, setSound, setCoexist } =
+    useCadence();
 
   // Tap the sound chip to quick-cycle to the next timbre; long-press for the
   // full picker with descriptions.
@@ -30,11 +31,22 @@ export default function Home() {
   // coexist settings page.
   const toggleCoexist = () => setCoexist(coexist === 'mix' ? 'exclusive' : 'mix');
 
+  // Tap the plan chip to quick-cycle to the next training plan; long-press to
+  // edit the current plan's phases directly.
+  const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
+  const cyclePlan = () => {
+    const i = plans.findIndex((p) => p.id === activePlanId);
+    setActivePlanId(plans[(i + 1) % plans.length].id);
+  };
+
   return (
     <Screen>
       {/* Header */}
       <View style={styles.header}>
         <Wordmark size={17} />
+        <RoundIconButton onPress={() => router.push('/settings')}>
+          <SettingsIcon />
+        </RoundIconButton>
       </View>
 
       {/* Center: BPM + beat + chips + play */}
@@ -66,10 +78,12 @@ export default function Home() {
               </Text>
             </Chip>
           </Pressable>
-          <Pressable onPress={() => router.push('/plan')}>
+          <Pressable onPress={cyclePlan} onLongPress={() => router.push('/plan')} delayLongPress={300}>
             <Chip style={styles.compactChip}>
               <MenuIcon />
-              <Text style={[styles.chipText, { color: c.text }]}>{t('home.trainingPlan')}</Text>
+              <Text style={[styles.chipText, styles.planChipText, { color: c.text }]} numberOfLines={1}>
+                {activePlan.name}
+              </Text>
             </Chip>
           </Pressable>
         </View>
@@ -131,6 +145,11 @@ const styles = StyleSheet.create({
   chipText: {
     fontFamily: fonts.bodyBold,
     fontSize: 12.5,
+  },
+  // Plan names are user-defined and can run long — cap the chip's width so
+  // the three-chip row never wraps, regardless of name length.
+  planChipText: {
+    maxWidth: 72,
   },
   steps: {
     flexDirection: 'row',

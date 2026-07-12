@@ -14,7 +14,8 @@ export default function Plan() {
   const { c, isDark } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
-  const { plan, startWorkout, addPhase, removePhase, updatePhase } = useCadence();
+  const { plans, activePlanId, renamePlan, plan, startWorkout, addPhase, removePhase, updatePhase } = useCadence();
+  const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
 
   const totalSec = plan.reduce((a, p) => a + p.durationSec, 0);
   const avg = Math.round(plan.reduce((a, p) => a + p.bpm * p.durationSec, 0) / totalSec);
@@ -30,6 +31,15 @@ export default function Plan() {
       <SubHeader title={t('plan.title')} subtitle={t('plan.subtitle')} />
 
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 20 }} showsVerticalScrollIndicator={false}>
+        <TextInput
+          value={activePlan.name}
+          onChangeText={(text) => renamePlan(activePlan.id, text)}
+          placeholder={t('plan.namePlaceholder')}
+          placeholderTextColor={c.textFaint}
+          maxLength={16}
+          style={[styles.planName, { color: c.text, borderBottomColor: c.divider }]}
+        />
+
         {plan.map((p, i) => {
           const active = i === activeIdx;
           return (
@@ -141,6 +151,13 @@ export default function Plan() {
 }
 
 const styles = StyleSheet.create({
+  planName: {
+    fontFamily: fonts.displayBold,
+    fontSize: 22,
+    borderBottomWidth: 1,
+    paddingBottom: 6,
+    marginBottom: 16,
+  },
   phase: {
     paddingVertical: 15,
     paddingHorizontal: 16,

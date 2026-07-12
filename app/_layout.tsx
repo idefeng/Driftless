@@ -68,6 +68,8 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="sounds" options={{ presentation: 'card' }} />
               <Stack.Screen name="coexist" options={{ presentation: 'card' }} />
+              <Stack.Screen name="settings" options={{ presentation: 'card' }} />
+              <Stack.Screen name="plan-list" options={{ presentation: 'card' }} />
               <Stack.Screen name="plan" options={{ presentation: 'card' }} />
               <Stack.Screen name="running" options={{ animation: 'slide_from_bottom' }} />
             </Stack>
