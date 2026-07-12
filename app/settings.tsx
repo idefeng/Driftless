@@ -46,7 +46,7 @@ export default function Settings() {
 
   return (
     <Screen>
-      <SubHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
+      <SubHeader title={t('settings.title')} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 20 }} showsVerticalScrollIndicator={false}>
         <View style={[styles.group, { backgroundColor: c.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
