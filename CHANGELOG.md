@@ -2,8 +2,13 @@
 
 ## 2026-07-12
 
+- 将 Android / iOS 包名从 `com.fengqun.driftless` 改回 `com.idefeng.driftless`，并重新执行 `expo prebuild --clean` 同步原生工程；`docs/store-launch-guide.md` 等上架文档同步更新，但此举会重新触发「该包名在当前新 Google Play 账号下无法创建应用」的历史问题，尚待解决。
 - 新增两种节拍音效「气泡声」「水滴声」，与嘀声、木鱼、节拍器共用同一套采样合成模型，iOS / Android / Web 三端同步实现。
 - 因涉及原生音频模块改动，本次变更需要重新出原生构建包，不能仅通过 OTA 发布。
+
+## 2026-07-01
+
+- 将 Google Play 发布包名从 `com.idefeng.driftless` 调整为 `com.fengqun.driftless`，用于新的 Google Play 开发者账号创建应用。
 
 ## 2026-06-30
 

@@ -1,6 +1,6 @@
 # Driftless Android 上架指南
 
-更新日期：2026-06-30
+更新日期：2026-07-12
 
 ## 当前项目状态
 
@@ -11,12 +11,12 @@
 - EAS Project ID：`af22973b-c89f-4d59-b406-a2ae922cdc64`
 - EAS Update URL：`https://u.expo.dev/af22973b-c89f-4d59-b406-a2ae922cdc64`
 - OTA runtime 策略：`appVersion`（当前 `1.0.1` 原生包只接收同一 runtime 的 JS / 资源更新）
-- Google Play AAB：<https://expo.dev/artifacts/eas/W4aR0acbrtnrOS8XigKVW_HWYDulTUuZmoxnOndVqCE.aab>（versionCode `5`）
+- Google Play AAB：<https://expo.dev/artifacts/eas/JaHgsSRSxxtIzemm9y6OW4zekgtBDbrzEVbx7jdf2Ew.aab>（versionCode `3`，包名 `com.fengqun.driftless`）
 - vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）
-- Google Play EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/892875e3-f830-4beb-a77e-b032d8d0cc5f>
+- Google Play EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/e8d0d506-37da-402b-88a2-531bcbec8043>
 - vivo APK EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/b7a5fbed-1d7b-4f54-9c3b-c8812177c1e3>
 - 历史 `1.0.0` AAB / APK 未内置 OTA，不建议继续上传。
-- 重要状态：旧包名 `com.driftless.app` 已被 Google Play 占用；当前统一改为 `com.idefeng.driftless`。不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或本地 `android/app/build/outputs/apk/release/app-release.apk`。
+- 重要状态：Android 包名已于 2026-07-12 改回 `com.idefeng.driftless`。此前（2026-07-01）曾因该包名在当前新 Google Play 账号下无法创建应用，改用 `com.fengqun.driftless` 并已产出对应 Google Play AAB（versionCode `3`，见下方链接）——**该包名冲突尚未解决**，若要继续用 `com.idefeng.driftless` 提交 Google Play，需要先确认 Play Console 是否接受这个包名，否则仍需回退到 `com.fengqun.driftless` 或另择包名。vivo/国内渠道全程使用的都是 `com.idefeng.driftless`，不受此次改动影响。不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或本地 `android/app/build/outputs/apk/release/app-release.apk`。
 
 ## 推荐上架顺序
 
@@ -144,12 +144,12 @@ CI=1 pnpm run ota:prod -- --message "说明本次生产更新"
 }
 ```
 
-下一步需要在 Play Console 中完成：
+下一步需要在 Play Console 中完成（注意：以下对应的是 2026-07-01 用 `com.fengqun.driftless` 构建的 AAB；源码当前包名已改回 `com.idefeng.driftless`，若改用新包名提交，需先重新走一次 EAS build）：
 
-1. 手动创建应用，包名保持 `com.idefeng.driftless`。
+1. 手动创建应用，包名保持 `com.fengqun.driftless`。
 2. 在 Google Cloud 创建 service account，并在 Play Console → Setup → API access 授权。
 3. 下载 JSON key，保存为 `secrets/google-play-service-account.json`。该目录已加入 `.gitignore`，不要提交。
-4. 执行 `pnpm exec eas submit -p android --id 383bc1ab-6592-4d74-afa8-3c4552cc6aaf --profile production`。
+4. 执行 `pnpm exec eas submit -p android --id e8d0d506-37da-402b-88a2-531bcbec8043 --profile production`。
 
 ## 国内渠道 APK 构建
 
@@ -175,7 +175,7 @@ vivo 等国内渠道需要 APK。当前已在 `eas.json` 中新增 `production-a
 pnpm exec eas build -p android --profile production-apk --non-interactive
 ```
 
-当前 vivo 可上传包：
+当前 vivo 可上传包按本次要求未重新构建，仍是之前的 `com.idefeng.driftless` APK：
 
 ```text
 https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk

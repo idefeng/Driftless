@@ -27,8 +27,11 @@
 ## 安装包
 
 - 当前 OTA 基线版本：`1.0.1`。
-- Google Play AAB：<https://expo.dev/artifacts/eas/W4aR0acbrtnrOS8XigKVW_HWYDulTUuZmoxnOndVqCE.aab>（versionCode `5`）。
+- 当前源码包名（`app.json`）：`com.idefeng.driftless`（2026-07-12 从 `com.fengqun.driftless` 改回；下方各安装包仍分别标注各自实际构建时的包名）。
+- Google Play AAB：<https://expo.dev/artifacts/eas/JaHgsSRSxxtIzemm9y6OW4zekgtBDbrzEVbx7jdf2Ew.aab>（versionCode `3`，包名 `com.fengqun.driftless`）。
 - vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）。
+- 本地 Google Play AAB：`../../dist/driftless-1.0.1-android-v3-com-fengqun-driftless-google-play.aab`。
+- 上一版 `com.idefeng.driftless` Google Play AAB：<https://expo.dev/artifacts/eas/W4aR0acbrtnrOS8XigKVW_HWYDulTUuZmoxnOndVqCE.aab>（不适合当前新 Google Play 账号继续创建应用）。
 - 历史 1.0.0 vivo/国内渠道 APK：`../../dist/driftless-1.0.0-android-v3-com-idefeng-driftless-vivo.apk`（未内置 OTA，不建议继续上传）。
 - 历史 1.0.0 Google Play AAB：`../../dist/driftless-1.0.0-android-v2-com-idefeng-driftless.aab`（未内置 OTA，不建议继续上传）。
 - 注意：不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或 `android/app/build/outputs/apk/release/app-release.apk`。
