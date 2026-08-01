@@ -7,6 +7,7 @@ import React, {
   useState,
   useCallback,
 } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CadenceScheduler, clampBpm } from '../audio/CadenceScheduler';
 import { brand } from '../theme/tokens';
 import { Platform, PermissionsAndroid } from 'react-native';
@@ -18,6 +19,12 @@ import type { Translator } from '../i18n/resources';
 import { logger } from '../utils/logger';
 
 const KEEP_AWAKE_TAG = 'driftless-cadence';
+
+// Bump the version suffix if the persisted shape ever changes incompatibly —
+// the load effect below discards anything that fails validation rather than
+// crashing on it.
+const STORAGE_KEY = 'driftless.cadence.v1';
+const PERSIST_DEBOUNCE_MS = 400;
 
 export type SoundId = 'beep' | 'woodfish' | 'click' | 'bubble' | 'droplet';
 export type CoexistMode = 'mix' | 'exclusive';
@@ -239,6 +246,69 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     [engine],
   );
 
+  // ── Persistence (PRD §4.2: plans + usual cadence settings survive restarts) ──
+  // Session-only fields (isPlaying/running/phase progress) are deliberately
+  // excluded — the app always launches paused, and mid-workout progress isn't
+  // resumable across a process kill anyway.
+  const [hydrated, setHydrated] = useState(false);
+  const isValidSound = (s: unknown): s is SoundId =>
+    s === 'beep' || s === 'woodfish' || s === 'click' || s === 'bubble' || s === 'droplet';
+  const isValidPhase = (p: unknown): p is PlanPhase =>
+    !!p &&
+    typeof (p as PlanPhase).id === 'string' &&
+    typeof (p as PlanPhase).name === 'string' &&
+    typeof (p as PlanPhase).durationSec === 'number' &&
+    typeof (p as PlanPhase).bpm === 'number' &&
+    typeof (p as PlanPhase).color === 'string';
+  const isValidPlan = (p: unknown): p is TrainingPlan =>
+    !!p &&
+    typeof (p as TrainingPlan).id === 'string' &&
+    typeof (p as TrainingPlan).name === 'string' &&
+    Array.isArray((p as TrainingPlan).phases) &&
+    (p as TrainingPlan).phases.length > 0 &&
+    (p as TrainingPlan).phases.every(isValidPhase);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (typeof saved.bpm === 'number') setBpm(saved.bpm);
+          if (isValidSound(saved.sound)) setSound(saved.sound);
+          if (saved.coexist === 'mix' || saved.coexist === 'exclusive') {
+            setCoexist(saved.coexist);
+          }
+          if (typeof saved.beatVolume === 'number') setBeatVolume(saved.beatVolume);
+          if (typeof saved.ducking === 'boolean') setDucking(saved.ducking);
+          if (typeof saved.keepAwake === 'boolean') setKeepAwake(saved.keepAwake);
+          if (Array.isArray(saved.plans) && saved.plans.length > 0 && saved.plans.every(isValidPlan)) {
+            setPlans(saved.plans);
+            if (typeof saved.activePlanId === 'string') setActivePlanId(saved.activePlanId);
+          }
+        }
+      } catch (error) {
+        logger.warn('读取本地存档失败，使用默认值。', error);
+      } finally {
+        setHydrated(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced so rapid changes (e.g. long-press ±BPM stepping) don't hammer
+  // AsyncStorage with a write per tick.
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = setTimeout(() => {
+      const payload = JSON.stringify({ bpm, sound, coexist, beatVolume, ducking, keepAwake, plans, activePlanId });
+      AsyncStorage.setItem(STORAGE_KEY, payload).catch((error) => {
+        logger.warn('保存本地存档失败。', error);
+      });
+    }, PERSIST_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [hydrated, bpm, sound, coexist, beatVolume, ducking, keepAwake, plans, activePlanId]);
+
   // 仅在用户开启常亮且节拍播放时保持屏幕唤醒，停止播放后立即释放。
   useEffect(() => {
     if (keepAwake && isPlaying) {
@@ -274,6 +344,15 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     return () => engine.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engine]);
+
+  // Android: the native engine pauses itself on headphone unplug / Bluetooth
+  // disconnect (PRD §4.1) without going through `togglePlay`, so it reports
+  // back via "onInterrupted" — otherwise the play button and lock-screen
+  // notification would keep showing "playing" while the beat is actually silent.
+  useEffect(() => {
+    const sub = CadenceAudio.addInterruptedListener(() => setIsPlaying(false));
+    return () => sub?.remove();
+  }, []);
 
   // ── Workout session ──────────────────────────────────────────────
   const startWorkout = useCallback(() => {

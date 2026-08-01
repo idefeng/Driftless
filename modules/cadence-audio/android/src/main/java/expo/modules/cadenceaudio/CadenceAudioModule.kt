@@ -1,6 +1,9 @@
 package expo.modules.cadenceaudio
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioFormat
@@ -64,6 +67,11 @@ class CadenceAudioModule : Module() {
 
   private var clickBuffers: Array<FloatArray> = arrayOf()
 
+  // Headphone unplug / Bluetooth disconnect (PRD §4.1 — default pause, avoid
+  // suddenly blasting through the speaker). JS didn't initiate this stop, so
+  // it's told via "onInterrupted" to keep the play button / notification in sync.
+  private var noisyReceiver: BroadcastReceiver? = null
+
   // ── Render-thread-owned state ────────────────────────────────────────────
   @Volatile private var samplesUntilNextBeat = 0
   private val voiceCount = 8
@@ -78,7 +86,7 @@ class CadenceAudioModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("CadenceAudio")
 
-    Events("onBeat")
+    Events("onBeat", "onInterrupted")
 
     Property("isRunning") { running }
 
@@ -162,6 +170,7 @@ class CadenceAudioModule : Module() {
     track = builder.build()
 
     startBeatPoll()
+    registerNoisyReceiver()
     prepared = true
   }
 
@@ -286,6 +295,40 @@ class CadenceAudioModule : Module() {
     mainHandler.post(poll)
   }
 
+  // MARK: - Route changes (headphone unplug / Bluetooth disconnect)
+
+  private fun registerNoisyReceiver() {
+    if (noisyReceiver != null) return
+    val ctx = appContext.reactContext ?: return
+    val receiver = object : BroadcastReceiver() {
+      override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != AudioManager.ACTION_AUDIO_BECOMING_NOISY) return
+        if (!running) return
+        running = false
+        applyFocus()
+        sendEvent("onInterrupted", mapOf("reason" to "routeChanged"))
+      }
+    }
+    val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      // API 33+ requires an explicit exported flag for context-registered receivers.
+      ctx.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    } else {
+      ctx.registerReceiver(receiver, filter)
+    }
+    noisyReceiver = receiver
+  }
+
+  private fun unregisterNoisyReceiver() {
+    val receiver = noisyReceiver ?: return
+    try {
+      appContext.reactContext?.unregisterReceiver(receiver)
+    } catch (_: IllegalArgumentException) {
+      // Already unregistered (e.g. context torn down first) — safe to ignore.
+    }
+    noisyReceiver = null
+  }
+
   // MARK: - Audio focus (matches the coexist / exclusive / ducking mode)
 
   private fun audioManager(): AudioManager? =
@@ -350,6 +393,7 @@ class CadenceAudioModule : Module() {
     running = false
     threadAlive = false
     polling = false
+    unregisterNoisyReceiver()
     abandonFocus()
     try {
       renderThread?.join(200)

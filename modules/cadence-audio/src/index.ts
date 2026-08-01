@@ -1,7 +1,7 @@
 import type { EventSubscription } from 'expo-modules-core';
 
 import Native from './CadenceAudioModule';
-import type { BeatEvent, CadenceSoundId } from './CadenceAudio.types';
+import type { BeatEvent, CadenceSoundId, InterruptedEvent } from './CadenceAudio.types';
 
 export * from './CadenceAudio.types';
 
@@ -40,6 +40,9 @@ export const CadenceAudio = {
   },
   addBeatListener(listener: (event: BeatEvent) => void): EventSubscription | null {
     return Native ? Native.addListener('onBeat', listener) : null;
+  },
+  addInterruptedListener(listener: (event: InterruptedEvent) => void): EventSubscription | null {
+    return Native ? Native.addListener('onInterrupted', listener) : null;
   },
 };
 
