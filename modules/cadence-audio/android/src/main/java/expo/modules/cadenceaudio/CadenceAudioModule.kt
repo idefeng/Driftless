@@ -22,7 +22,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Order matters: index === position in this list.
-private val SOUND_IDS = listOf("beep", "woodfish", "click")
+private val SOUND_IDS = listOf("beep", "woodfish", "click", "bubble", "droplet")
 private fun soundIndex(id: String): Int = SOUND_IDS.indexOf(id).let { if (it < 0) 1 else it }
 private fun clampBpm(b: Double): Double = min(250.0, max(100.0, Math.round(b).toDouble()))
 
@@ -34,9 +34,9 @@ private fun clampBpm(b: Double): Double = min(250.0, max(100.0, Math.round(b).to
  * interval at every beat — zero accumulating drift, sub-sample jitter. The blocking
  * `AudioTrack.write` paces the loop to the hardware clock.
  *
- * We never request audio focus, so beats mix on top of any music/podcast/video
- * (PRD §3.2 coexist). USAGE_ASSISTANCE_SONIFICATION marks them as cues so the
- * system won't arbitrarily duck them.
+ * Beats route through USAGE_MEDIA so hardware volume keys control them like
+ * music. Audio focus is applied per mode: no focus for mix, GAIN for exclusive,
+ * and TRANSIENT_MAY_DUCK when the user opts into ducking.
  */
 class CadenceAudioModule : Module() {
   // ── Control state (written by JS thread, read by render thread) ──────────
@@ -238,6 +238,8 @@ class CadenceAudioModule : Module() {
       doubleArrayOf(1900.0, 0.012, 0.035, 0.0),  // beep
       doubleArrayOf(720.0, 0.018, 0.055, 0.06),  // woodfish
       doubleArrayOf(3000.0, 0.004, 0.014, 0.15), // click
+      doubleArrayOf(480.0, 0.025, 0.075, 0.22),  // bubble
+      doubleArrayOf(2600.0, 0.02, 0.05, 0.03),   // droplet
     )
     clickBuffers = Array(grains.size) { synth(grains[it][0], grains[it][1], grains[it][2], grains[it][3]) }
   }

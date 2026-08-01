@@ -50,6 +50,10 @@ class CadenceLiveService : Service() {
   private var phaseIndex = 0
   private var phaseCount = 1
   private var endTimeMs = 0.0
+  private var phaseProgressText = ""
+  private var skipActionLabel = "Skip phase"
+  private var channelName = "Run cadence"
+  private var channelDescription = "Active cadence and controls"
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -91,6 +95,10 @@ class CadenceLiveService : Service() {
     if (intent.hasExtra("phaseIndex")) phaseIndex = intent.getIntExtra("phaseIndex", phaseIndex)
     if (intent.hasExtra("phaseCount")) phaseCount = intent.getIntExtra("phaseCount", phaseCount)
     if (intent.hasExtra("endTimeMs")) endTimeMs = intent.getDoubleExtra("endTimeMs", endTimeMs)
+    if (intent.hasExtra("phaseProgressText")) phaseProgressText = intent.getStringExtra("phaseProgressText") ?: phaseProgressText
+    if (intent.hasExtra("skipActionLabel")) skipActionLabel = intent.getStringExtra("skipActionLabel") ?: skipActionLabel
+    if (intent.hasExtra("channelName")) channelName = intent.getStringExtra("channelName") ?: channelName
+    if (intent.hasExtra("channelDescription")) channelDescription = intent.getStringExtra("channelDescription") ?: channelDescription
   }
 
   private fun ensureChannel() {
@@ -98,20 +106,25 @@ class CadenceLiveService : Service() {
     val mgr = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     // Drop the old LOW-importance channel so it doesn't linger in app settings.
     mgr.deleteNotificationChannel(OLD_CHANNEL_ID)
-    if (mgr.getNotificationChannel(CHANNEL_ID) == null) {
-      val channel = NotificationChannel(
-        CHANNEL_ID,
-        "跑步节拍",
-        NotificationManager.IMPORTANCE_DEFAULT,
-      ).apply {
-        description = "运行中的步频与控制"
-        setShowBadge(false)
-        setSound(null, null)
-        enableVibration(false)
-        lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-      }
-      mgr.createNotificationChannel(channel)
+    val existing = mgr.getNotificationChannel(CHANNEL_ID)
+    if (existing != null) {
+      existing.setName(channelName)
+      existing.setDescription(channelDescription)
+      mgr.createNotificationChannel(existing)
+      return
     }
+    val channel = NotificationChannel(
+      CHANNEL_ID,
+      channelName,
+      NotificationManager.IMPORTANCE_DEFAULT,
+    ).apply {
+      description = channelDescription
+      setShowBadge(false)
+      setSound(null, null)
+      enableVibration(false)
+      lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+    }
+    mgr.createNotificationChannel(channel)
   }
 
   private fun servicePending(action: String): PendingIntent {
@@ -129,7 +142,7 @@ class CadenceLiveService : Service() {
   private fun buildNotification(): Notification {
     val isWorkout = phaseCount > 1
     val title = if (phaseName.isEmpty()) "Driftless" else "Driftless · $phaseName"
-    val sub = if (isWorkout) "$bpm SPM · 第 ${phaseIndex + 1}/$phaseCount 段" else "$bpm SPM"
+    val sub = if (isWorkout && phaseProgressText.isNotEmpty()) "$bpm SPM · $phaseProgressText" else "$bpm SPM"
 
     val builder = NotificationCompat.Builder(this, CHANNEL_ID)
       .setSmallIcon(android.R.drawable.ic_media_play)
@@ -142,8 +155,8 @@ class CadenceLiveService : Service() {
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setOnlyAlertOnce(true)
       .addAction(0, "−1", servicePending(ACTION_DEC))
-    // "跳过本段" only makes sense inside a structured workout.
-    if (isWorkout) builder.addAction(0, "跳过本段", servicePending(ACTION_SKIP))
+    // 只有结构化训练才展示“跳过阶段”控制。
+    if (isWorkout) builder.addAction(0, skipActionLabel, servicePending(ACTION_SKIP))
     builder.addAction(0, "+1", servicePending(ACTION_INC))
 
     contentPending()?.let { builder.setContentIntent(it) }

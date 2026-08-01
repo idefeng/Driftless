@@ -13,22 +13,25 @@ import { Platform, PermissionsAndroid } from 'react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import CadenceAudio from '../../modules/cadence-audio';
 import CadenceLive, { LiveSessionState } from '../../modules/cadence-live';
+import { useI18n } from '../i18n/I18nContext';
+import type { Translator } from '../i18n/resources';
+import { logger } from '../utils/logger';
 
 const KEEP_AWAKE_TAG = 'driftless-cadence';
 
-export type SoundId = 'beep' | 'woodfish' | 'click';
+export type SoundId = 'beep' | 'woodfish' | 'click' | 'bubble' | 'droplet';
 export type CoexistMode = 'mix' | 'exclusive';
 
 export interface SoundDef {
   id: SoundId;
-  name: string;
-  desc: string;
 }
 
 export const SOUNDS: SoundDef[] = [
-  { id: 'beep', name: '电子嘀声', desc: '高频穿透 · 嘈杂环境首选' },
-  { id: 'woodfish', name: '木鱼', desc: '温暖瞬态 · 音乐背景中清晰' },
-  { id: 'click', name: '标准节拍器', desc: '经典鼓点 · 强拍分明' },
+  { id: 'beep' },
+  { id: 'woodfish' },
+  { id: 'click' },
+  { id: 'bubble' },
+  { id: 'droplet' },
 ];
 
 export interface PlanPhase {
@@ -39,11 +42,19 @@ export interface PlanPhase {
   color: string; // accent bar color
 }
 
-export const DEFAULT_PLAN: PlanPhase[] = [
-  { id: 'p1', name: '热身', durationSec: 5 * 60, bpm: 170, color: brand.light },
-  { id: 'p2', name: '巡航', durationSec: 20 * 60, bpm: 180, color: brand.base },
-  { id: 'p3', name: '冲刺', durationSec: 5 * 60, bpm: 190, color: brand.deep },
-];
+export interface TrainingPlan {
+  id: string;
+  name: string;
+  phases: PlanPhase[];
+}
+
+export function createDefaultPlan(t: Translator): PlanPhase[] {
+  return [
+    { id: 'p1', name: t('plan.defaultWarmup'), durationSec: 5 * 60, bpm: 170, color: brand.light },
+    { id: 'p2', name: t('plan.defaultCruise'), durationSec: 20 * 60, bpm: 180, color: brand.base },
+    { id: 'p3', name: t('plan.defaultSprint'), durationSec: 5 * 60, bpm: 190, color: brand.deep },
+  ];
+}
 
 /**
  * Engine facade — routes playback to the native (iOS/Android) or WebAudio
@@ -69,6 +80,8 @@ interface CadenceState {
   beatVolume: number; // 0..1, independent of media volume
   ducking: boolean;
   keepAwake: boolean;
+  plans: TrainingPlan[];
+  activePlanId: string;
   plan: PlanPhase[];
   // running session
   running: boolean;
@@ -87,6 +100,10 @@ interface CadenceApi extends CadenceState {
   setBeatVolume: (v: number) => void;
   setDucking: (b: boolean) => void;
   setKeepAwake: (b: boolean) => void;
+  setActivePlanId: (id: string) => void;
+  createPlan: () => string;
+  renamePlan: (id: string, name: string) => void;
+  deletePlan: (id: string) => void;
   startWorkout: () => void;
   stopWorkout: () => void;
   skipPhase: () => void;
@@ -98,6 +115,7 @@ interface CadenceApi extends CadenceState {
 const Ctx = createContext<CadenceApi | null>(null);
 
 export function CadenceProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const schedulerRef = useRef(new CadenceScheduler());
   const audioReady = CadenceAudio.isAvailable();
 
@@ -136,7 +154,21 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   const [beatVolume, setBeatVolumeState] = useState(0.72);
   const [ducking, setDuckingState] = useState(false);
   const [keepAwake, setKeepAwake] = useState(true);
-  const [plan, setPlan] = useState<PlanPhase[]>(DEFAULT_PLAN);
+  const [plans, setPlans] = useState<TrainingPlan[]>(() => [
+    { id: 'default', name: t('plan.defaultName', { number: 1 }), phases: createDefaultPlan(t) },
+  ]);
+  const [activePlanId, setActivePlanId] = useState('default');
+  const plan = useMemo(
+    () => plans.find((p) => p.id === activePlanId)?.phases ?? plans[0].phases,
+    [plans, activePlanId],
+  );
+
+  // If the active plan was deleted, fall back to the first remaining plan.
+  useEffect(() => {
+    if (!plans.some((p) => p.id === activePlanId)) {
+      setActivePlanId(plans[0].id);
+    }
+  }, [plans, activePlanId]);
 
   const [running, setRunning] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
@@ -207,25 +239,28 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     [engine],
   );
 
-  // Keep the screen awake while the metronome is sounding (PRD §3.2 "常亮"),
-  // but only when the user opted in. Released as soon as playback stops or the
-  // toggle is turned off so we never hold the lock longer than needed.
+  // 仅在用户开启常亮且节拍播放时保持屏幕唤醒，停止播放后立即释放。
   useEffect(() => {
     if (keepAwake && isPlaying) {
-      activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+      void activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch((error) => {
+        logger.warn('屏幕常亮启用失败。', error);
+      });
       return () => {
-        deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
+        void deactivateKeepAwake(KEEP_AWAKE_TAG).catch((error) => {
+          logger.warn('屏幕常亮释放失败。', error);
+        });
       };
     }
   }, [keepAwake, isPlaying]);
 
-  // Android 13+ needs the runtime POST_NOTIFICATIONS grant before the live
-  // workout's foreground-service notification (lock-screen card) can show.
+  // Android 13+ 需要运行时通知授权，前台服务卡片才能正常显示。
   useEffect(() => {
     if (Platform.OS === 'android' && Platform.Version >= 33) {
-      PermissionsAndroid.request(
+      void PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      ).catch(() => {});
+      ).catch((error) => {
+        logger.warn('通知权限请求失败。', error);
+      });
     }
   }, []);
 
@@ -274,40 +309,91 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
 
   const skipPhase = useCallback(() => advancePhase(), [advancePhase]);
 
-  // ── Plan editing ─────────────────────────────────────────────────
+  // ── Plan management (multiple named training plans) ────────────────
+  const createPlan = useCallback(() => {
+    const id = `plan${Date.now()}`;
+    const newPlan: TrainingPlan = {
+      id,
+      name: t('plan.defaultName', { number: plans.length + 1 }),
+      phases: [
+        {
+          id: `p${Date.now()}`,
+          name: t('plan.defaultPhase', { number: 1 }),
+          durationSec: 20 * 60,
+          bpm: 180,
+          color: brand.base,
+        },
+      ],
+    };
+    setPlans((prev) => [...prev, newPlan]);
+    setActivePlanId(id);
+    return id;
+  }, [t, plans.length]);
+
+  const renamePlan = useCallback((id: string, name: string) => {
+    setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
+  }, []);
+
+  const deletePlan = useCallback((id: string) => {
+    // Keep at least one plan so there is always something to train with.
+    setPlans((prev) => (prev.length <= 1 ? prev : prev.filter((p) => p.id !== id)));
+  }, []);
+
+  // ── Phase editing (operates on the active plan's phases) ───────────
   const addPhase = useCallback(() => {
-    setPlan((prev) => {
-      const palette = [brand.light, brand.base, brand.deep];
-      const last = prev[prev.length - 1];
-      const next: PlanPhase = {
-        id: `p${Date.now()}`,
-        name: `阶段 ${prev.length + 1}`,
-        durationSec: 5 * 60,
-        // Start from the previous phase's rate; the user edits it freely.
-        bpm: clampBpm(last?.bpm ?? 180),
-        color: palette[prev.length % palette.length],
-      };
-      return [...prev, next];
-    });
-  }, []);
-
-  const removePhase = useCallback((id: string) => {
-    // Keep at least one phase so a workout always has something to run.
-    setPlan((prev) => (prev.length <= 1 ? prev : prev.filter((p) => p.id !== id)));
-  }, []);
-
-  const updatePhase = useCallback<CadenceApi['updatePhase']>((id, patch) => {
-    setPlan((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        const next = { ...p };
-        if (patch.bpm != null) next.bpm = clampBpm(patch.bpm);
-        if (patch.durationSec != null) next.durationSec = Math.max(30, Math.round(patch.durationSec));
-        if (patch.name != null) next.name = patch.name;
-        return next;
+    setPlans((prev) =>
+      prev.map((pl) => {
+        if (pl.id !== activePlanId) return pl;
+        const palette = [brand.light, brand.base, brand.deep];
+        const last = pl.phases[pl.phases.length - 1];
+        const next: PlanPhase = {
+          id: `p${Date.now()}`,
+          name: t('plan.defaultPhase', { number: pl.phases.length + 1 }),
+          durationSec: 5 * 60,
+          // Start from the previous phase's rate; the user edits it freely.
+          bpm: clampBpm(last?.bpm ?? 180),
+          color: palette[pl.phases.length % palette.length],
+        };
+        return { ...pl, phases: [...pl.phases, next] };
       }),
     );
-  }, []);
+  }, [t, activePlanId]);
+
+  const removePhase = useCallback(
+    (id: string) => {
+      // Keep at least one phase so a workout always has something to run.
+      setPlans((prev) =>
+        prev.map((pl) => {
+          if (pl.id !== activePlanId) return pl;
+          if (pl.phases.length <= 1) return pl;
+          return { ...pl, phases: pl.phases.filter((p) => p.id !== id) };
+        }),
+      );
+    },
+    [activePlanId],
+  );
+
+  const updatePhase = useCallback<CadenceApi['updatePhase']>(
+    (id, patch) => {
+      setPlans((prev) =>
+        prev.map((pl) => {
+          if (pl.id !== activePlanId) return pl;
+          return {
+            ...pl,
+            phases: pl.phases.map((p) => {
+              if (p.id !== id) return p;
+              const next = { ...p };
+              if (patch.bpm != null) next.bpm = clampBpm(patch.bpm);
+              if (patch.durationSec != null) next.durationSec = Math.max(30, Math.round(patch.durationSec));
+              if (patch.name != null) next.name = patch.name;
+              return next;
+            }),
+          };
+        }),
+      );
+    },
+    [activePlanId],
+  );
 
   // ── Live presentation (iOS Live Activity / Android foreground notification) ──
   // Keep the latest snapshot in a ref so the start/update effects always push
@@ -319,6 +405,11 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     phaseCount: plan.length,
     endTimeMs: 0,
     running: false,
+    phaseProgressText: '',
+    remainingLabel: t('live.remaining'),
+    skipActionLabel: t('live.skipPhase'),
+    channelName: t('live.channelName'),
+    channelDescription: t('live.channelDescription'),
   });
   // During a workout: show the phase, its index, and a live countdown. On the
   // home screen (free metronome): just the rate — phaseCount 1 tells the native
@@ -331,6 +422,11 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
         phaseCount: plan.length,
         endTimeMs: phaseEndRef.current,
         running: true,
+        phaseProgressText: t('live.phaseProgress', { current: phaseIndex + 1, total: plan.length }),
+        remainingLabel: t('live.remaining'),
+        skipActionLabel: t('live.skipPhase'),
+        channelName: t('live.channelName'),
+        channelDescription: t('live.channelDescription'),
       }
     : {
         bpm,
@@ -339,6 +435,11 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
         phaseCount: 1,
         endTimeMs: 0,
         running: isPlaying,
+        phaseProgressText: '',
+        remainingLabel: t('live.remaining'),
+        skipActionLabel: t('live.skipPhase'),
+        channelName: t('live.channelName'),
+        channelDescription: t('live.channelDescription'),
       };
 
   // Lock-screen ±1 / skip controls feed back into cadence state.
@@ -364,7 +465,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isPlaying) CadenceLive.update(liveStateRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bpm, phaseIndex, running, isPlaying]);
+  }, [bpm, phaseIndex, running, isPlaying, t]);
 
   // running countdown
   useEffect(() => {
@@ -390,6 +491,8 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       beatVolume,
       ducking,
       keepAwake,
+      plans,
+      activePlanId,
       plan,
       running,
       phaseIndex,
@@ -403,6 +506,10 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       setBeatVolume,
       setDucking,
       setKeepAwake,
+      setActivePlanId,
+      createPlan,
+      renamePlan,
+      deletePlan,
       startWorkout,
       stopWorkout,
       skipPhase,
@@ -411,9 +518,10 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       updatePhase,
     }),
     [
-      bpm, isPlaying, sound, coexist, beatVolume, ducking, keepAwake, plan,
-      running, phaseIndex, phaseRemainingSec, audioReady, setBpm, step,
-      togglePlay, setSound, setCoexist, setBeatVolume, setDucking, startWorkout,
+      bpm, isPlaying, sound, coexist, beatVolume, ducking, keepAwake, plans,
+      activePlanId, plan, running, phaseIndex, phaseRemainingSec, audioReady,
+      setBpm, step, togglePlay, setSound, setCoexist, setBeatVolume, setDucking,
+      createPlan, renamePlan, deletePlan, startWorkout,
       stopWorkout, skipPhase, addPhase, removePhase, updatePhase,
     ],
   );
@@ -426,12 +534,6 @@ export function useCadence() {
   if (!v) throw new Error('useCadence must be used within CadenceProvider');
   return v;
 }
-
-export const SOUND_NAME: Record<SoundId, string> = {
-  beep: '电子嘀声',
-  woodfish: '木鱼',
-  click: '标准节拍器',
-};
 
 export function formatClock(totalSec: number): string {
   const m = Math.floor(totalSec / 60);

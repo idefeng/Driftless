@@ -6,15 +6,19 @@ import { BeatBars } from '../src/components/BeatBars';
 import { PlayPauseButton } from '../src/components/PlayPauseButton';
 import { StepButton } from '../src/components/StepButton';
 import { Wordmark } from '../src/components/Logo';
-import { Chip, MenuIcon, MiniBars, dot } from '../src/components/ui';
+import { Chip, RoundIconButton, MenuIcon, SettingsIcon, MiniBars, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
-import { useCadence, SOUND_NAME, SOUNDS } from '../src/state/CadenceContext';
+import { useCadence, SOUNDS } from '../src/state/CadenceContext';
+import { useI18n } from '../src/i18n/I18nContext';
+import { getSoundShortName } from '../src/i18n/labels';
 
 export default function Home() {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
-  const { bpm, isPlaying, sound, coexist, step, togglePlay, setSound, setCoexist } = useCadence();
+  const { bpm, isPlaying, sound, coexist, plans, activePlanId, setActivePlanId, step, togglePlay, setSound, setCoexist } =
+    useCadence();
 
   // Tap the sound chip to quick-cycle to the next timbre; long-press for the
   // full picker with descriptions.
@@ -27,16 +31,27 @@ export default function Home() {
   // coexist settings page.
   const toggleCoexist = () => setCoexist(coexist === 'mix' ? 'exclusive' : 'mix');
 
+  // Tap the plan chip to quick-cycle to the next training plan; long-press to
+  // edit the current plan's phases directly.
+  const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
+  const cyclePlan = () => {
+    const i = plans.findIndex((p) => p.id === activePlanId);
+    setActivePlanId(plans[(i + 1) % plans.length].id);
+  };
+
   return (
     <Screen>
       {/* Header */}
       <View style={styles.header}>
         <Wordmark size={17} />
+        <RoundIconButton onPress={() => router.push('/settings')}>
+          <SettingsIcon />
+        </RoundIconButton>
       </View>
 
       {/* Center: BPM + beat + chips + play */}
       <View style={styles.center}>
-        <Text style={[styles.kicker, { color: c.textFaint }]}>当前步频 · SPM</Text>
+        <Text style={[styles.kicker, { color: c.textFaint }]}>{t('home.currentCadence')}</Text>
         <Text style={[styles.bpm, { color: c.textStrong }]}>{bpm}</Text>
 
         <View style={{ marginTop: 22 }}>
@@ -52,21 +67,23 @@ export default function Home() {
           <Pressable onPress={cycleSound} onLongPress={() => router.push('/sounds')} delayLongPress={300}>
             <Chip style={styles.compactChip}>
               <MiniBars color={c.textFaint} heights={[6, 13, 9]} />
-              <Text style={[styles.chipText, { color: c.text }]}>{SOUND_NAME[sound]}</Text>
+              <Text style={[styles.chipText, { color: c.text }]}>{getSoundShortName(t, sound)}</Text>
             </Chip>
           </Pressable>
           <Pressable onPress={toggleCoexist} onLongPress={() => router.push('/coexist')} delayLongPress={300}>
             <Chip accent style={styles.compactChip}>
               {dot(isDark ? brand.glow : brand.deep)}
               <Text style={[styles.chipText, { color: c.brandText }]}>
-                {coexist === 'mix' ? '共存' : '独占'}
+                {coexist === 'mix' ? t('home.coexistMix') : t('home.coexistExclusive')}
               </Text>
             </Chip>
           </Pressable>
-          <Pressable onPress={() => router.push('/plan')}>
+          <Pressable onPress={cyclePlan} onLongPress={() => router.push('/plan')} delayLongPress={300}>
             <Chip style={styles.compactChip}>
               <MenuIcon />
-              <Text style={[styles.chipText, { color: c.text }]}>训练计划</Text>
+              <Text style={[styles.chipText, styles.planChipText, { color: c.text }]} numberOfLines={1}>
+                {activePlan.name}
+              </Text>
             </Chip>
           </Pressable>
         </View>
@@ -78,8 +95,8 @@ export default function Home() {
 
       {/* Bottom: 1/4-screen blind-op ±1 buttons */}
       <View style={styles.steps}>
-        <StepButton sign="−" label="减速 −1" onStep={() => step(-1)} />
-        <StepButton sign="+" label="加速 +1" onStep={() => step(1)} />
+        <StepButton sign="−" label={t('home.slowDown')} onStep={() => step(-1)} />
+        <StepButton sign="+" label={t('home.speedUp')} onStep={() => step(1)} />
       </View>
     </Screen>
   );
@@ -128,6 +145,11 @@ const styles = StyleSheet.create({
   chipText: {
     fontFamily: fonts.bodyBold,
     fontSize: 12.5,
+  },
+  // Plan names are user-defined and can run long — cap the chip's width so
+  // the three-chip row never wraps, regardless of name length.
+  planChipText: {
+    maxWidth: 72,
   },
   steps: {
     flexDirection: 'row',

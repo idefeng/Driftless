@@ -19,14 +19,18 @@ public struct DriftlessActivityAttributes: ActivityAttributes {
     public var phaseCount: Int
     public var endTime: Date
     public var running: Bool
+    public var phaseProgressText: String
+    public var remainingLabel: String
 
-    public init(bpm: Int, phaseName: String, phaseIndex: Int, phaseCount: Int, endTime: Date, running: Bool) {
+    public init(bpm: Int, phaseName: String, phaseIndex: Int, phaseCount: Int, endTime: Date, running: Bool, phaseProgressText: String, remainingLabel: String) {
       self.bpm = bpm
       self.phaseName = phaseName
       self.phaseIndex = phaseIndex
       self.phaseCount = phaseCount
       self.endTime = endTime
       self.running = running
+      self.phaseProgressText = phaseProgressText
+      self.remainingLabel = remainingLabel
     }
   }
 

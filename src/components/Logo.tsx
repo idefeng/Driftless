@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { brand, fonts } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 
 /**
  * Logo — four equidistant rounded bars with rhythmic height variation
@@ -45,6 +46,7 @@ interface WordmarkProps {
 
 export function Wordmark({ size = 17, showTagline = false }: WordmarkProps) {
   const { c } = useTheme();
+  const { t } = useI18n();
   return (
     <View style={styles.brandRow}>
       <LogoMark size={size * 1.06} />
@@ -69,7 +71,7 @@ export function Wordmark({ size = 17, showTagline = false }: WordmarkProps) {
               marginTop: 2,
             }}
           >
-            Run Cadence · 零漂移步频
+            {t('logo.tagline')}
           </Text>
         )}
       </View>

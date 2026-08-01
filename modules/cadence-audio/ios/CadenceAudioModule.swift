@@ -2,7 +2,7 @@ import ExpoModulesCore
 import AVFoundation
 
 // Order matters: index === position in this array.
-private let SOUND_IDS = ["beep", "woodfish", "click"]
+private let SOUND_IDS = ["beep", "woodfish", "click", "bubble", "droplet"]
 
 private func soundIndex(_ id: String) -> Int {
   return SOUND_IDS.firstIndex(of: id) ?? 1
@@ -219,6 +219,8 @@ public class CadenceAudioModule: Module {
       (1900, 0.012, 0.035, 0.0),  // beep
       (720, 0.018, 0.055, 0.06),  // woodfish
       (3000, 0.004, 0.014, 0.15), // click
+      (480, 0.025, 0.075, 0.22),  // bubble
+      (2600, 0.02, 0.05, 0.03),   // droplet
     ]
     for g in grains {
       let arr = synth(freq: g.0, decay: g.1, dur: g.2, noise: g.3, sr: sampleRate)

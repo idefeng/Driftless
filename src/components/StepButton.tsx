@@ -2,6 +2,7 @@ import React, { useCallback, useRef } from 'react';
 import { Pressable, Text, StyleSheet, View } from 'react-native';
 import { brand, fonts } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 
 /**
  * StepButton — the 1/4-screen blind-operation ±1 control (PRD §3.3).
@@ -21,13 +22,15 @@ interface StepButtonProps {
 export function StepButton({
   sign,
   label,
-  hint = '长按连续',
+  hint,
   onStep,
   flex = 1,
   glyphSize = 84,
   height = 204,
 }: StepButtonProps) {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
+  const hintText = hint ?? t('step.holdToRepeat');
   const delta = sign === '+' ? 1 : -1;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalMs = useRef(260);
@@ -84,7 +87,7 @@ export function StepButton({
       </Text>
       <Text style={{ fontFamily: fonts.bodyBold, fontSize: 14, color: c.brandText }}>{label}</Text>
       <View style={{ height: 2 }} />
-      <Text style={{ fontFamily: fonts.bodySemiBold, fontSize: 11, color: c.textFaint }}>{hint}</Text>
+      <Text style={{ fontFamily: fonts.bodySemiBold, fontSize: 11, color: c.textFaint }}>{hintText}</Text>
     </Pressable>
   );
 }
