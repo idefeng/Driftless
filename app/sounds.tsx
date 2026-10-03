@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
-import { CheckIcon, dot } from '../src/components/ui';
+import { CheckIcon, Segmented, dot } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
-import { useCadence, SOUNDS, SoundId } from '../src/state/CadenceContext';
+import { useCadence, SOUNDS, SoundId, ACCENT_OPTIONS } from '../src/state/CadenceContext';
 import { useI18n } from '../src/i18n/I18nContext';
 import { getSoundDesc, getSoundName } from '../src/i18n/labels';
 
@@ -20,7 +20,7 @@ const ICON_BARS: Record<SoundId, number[]> = {
 export default function Sounds() {
   const { c, isDark } = useTheme();
   const { t } = useI18n();
-  const { sound, setSound } = useCadence();
+  const { sound, setSound, accentEvery, setAccentEvery } = useCadence();
 
   return (
     <Screen>
@@ -94,6 +94,20 @@ export default function Sounds() {
           );
         })}
 
+        <View style={[styles.accentCard, { backgroundColor: c.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+          <Text style={[styles.name, { color: c.text }]}>{t('accent.title')}</Text>
+          <Text style={[styles.desc, { color: c.textFaint, marginBottom: 12 }]}>{t('accent.subtitle')}</Text>
+          <Segmented
+            label={t('accent.title')}
+            value={accentEvery}
+            onChange={setAccentEvery}
+            options={ACCENT_OPTIONS.map((n) => ({
+              value: n,
+              label: n === 0 ? t('accent.off') : t('accent.every', { n }),
+            }))}
+          />
+        </View>
+
         <View style={[styles.note, { backgroundColor: c.cardAlt }]}>
           <View style={{ marginTop: 5 }}>{dot(brand.base)}</View>
           <Text style={[styles.noteText, { color: c.textMuted }]}>
@@ -139,6 +153,15 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     borderLeftColor: '#8C8275',
+  },
+  accentCard: {
+    padding: 16,
+    borderRadius: 22,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 2,
   },
   note: {
     flexDirection: 'row',

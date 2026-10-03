@@ -11,6 +11,15 @@ export declare class CadenceAudioModule extends NativeModule<CadenceAudioModuleE
   stop(): void;
   /** Re-rate. Applies at the next beat boundary ("natural finish, instant re-rate"). */
   setBpm(bpm: number): void;
+  /**
+   * Linearly glide to `bpm` over `durationMs` (PRD §3.4 Ramp), re-deriving each
+   * beat's interval from ramp progress. Any later `setBpm` cancels the ramp.
+   */
+  rampTo(bpm: number, durationMs: number): void;
+  /** Accent every N-th beat with a pitched-up variant of the timbre; 0 = off. */
+  setAccent(every: number): void;
+  /** Layer a phase-change cue chirp onto the next beat (no-op while stopped). */
+  cue(): void;
   /** Beat gain, 0..1, independent of system media volume. */
   setVolume(volume: number): void;
   /** Pick the active click timbre. */

@@ -17,7 +17,7 @@ pnpm web            # browser preview (Metro web bundler)
 pnpm exec tsc --noEmit   # typecheck (no dedicated `pnpm typecheck` script exists)
 ```
 
-There is no test suite or lint script configured in this repo — don't assume `pnpm test`/`pnpm lint` exist.
+`pnpm test` runs node `--test` unit suites (`test:i18n`, `test:ota`, `test:audio`) with `--experimental-strip-types`, so `.test.mjs` files import `.ts` directly. There is no lint script.
 
 **Native modules require a development build — they do not run in Expo Go.** `modules/cadence-audio` and `modules/cadence-live` are custom native modules; in Expo Go, `requireNativeModule` throws and the app falls back to JS-only stand-ins (see Architecture below). To hear real audio or see Live Activities:
 

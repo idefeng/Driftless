@@ -5,9 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
 import { MiniStepper } from '../src/components/MiniStepper';
+import { Segmented, Toggle } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
-import { useCadence, formatClock } from '../src/state/CadenceContext';
+import { useCadence, formatClock, RAMP_OPTIONS } from '../src/state/CadenceContext';
 import { useI18n } from '../src/i18n/I18nContext';
 import { PlanShareModal } from '../src/components/PlanShareModal';
 
@@ -18,7 +19,10 @@ export default function Plan() {
   const { c, isDark } = useTheme();
   const { t, language } = useI18n();
   const router = useRouter();
-  const { plans, activePlanId, renamePlan, plan, startWorkout, addPhase, removePhase, updatePhase } = useCadence();
+  const {
+    plans, activePlanId, renamePlan, plan, startWorkout, addPhase, removePhase, updatePhase,
+    rampSec, setRampSec, phaseCue, setPhaseCue,
+  } = useCadence();
   const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
 
   const [shareVisible, setShareVisible] = useState(false);
@@ -152,6 +156,28 @@ export default function Plan() {
         {plan.length > 1 && (
           <Text style={[styles.deleteHint, { color: c.textFaint }]}>{t('plan.deleteHint')}</Text>
         )}
+
+        <Text style={[styles.sectionTitle, { color: c.textFaint }]}>{t('plan.transitionTitle')}</Text>
+        <View style={[styles.transitionCard, { backgroundColor: c.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+          <Text style={[styles.optTitle, { color: c.text }]}>{t('plan.rampTitle')}</Text>
+          <Text style={[styles.optSub, { color: c.textFaint }]}>{t('plan.rampSubtitle')}</Text>
+          <Segmented
+            label={t('plan.rampTitle')}
+            value={rampSec}
+            onChange={setRampSec}
+            options={RAMP_OPTIONS.map((n) => ({
+              value: n,
+              label: n === 0 ? t('plan.rampOff') : t('plan.rampSec', { n }),
+            }))}
+          />
+          <View style={[styles.cueRow, { borderTopColor: c.divider }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.optTitle, { color: c.text }]}>{t('plan.cueTitle')}</Text>
+              <Text style={[styles.optSub, { color: c.textFaint, marginBottom: 0 }]}>{t('plan.cueSubtitle')}</Text>
+            </View>
+            <Toggle value={phaseCue} onChange={setPhaseCue} label={t('plan.cueTitle')} />
+          </View>
+        </View>
       </ScrollView>
 
       <View style={{ paddingHorizontal: 16 }}>
@@ -246,6 +272,32 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
+  },
+  sectionTitle: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
+    letterSpacing: 1,
+    marginTop: 24,
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  transitionCard: {
+    padding: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  optTitle: { fontFamily: fonts.bodyBold, fontSize: 15.5 },
+  optSub: { fontFamily: fonts.bodyMedium, fontSize: 12, marginTop: 2, marginBottom: 12 },
+  cueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
   },
   deleteHint: { fontFamily: fonts.bodyMedium, fontSize: 12, textAlign: 'center', marginTop: 10 },
   summary: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingBottom: 12 },

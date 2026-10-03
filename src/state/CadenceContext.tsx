@@ -30,6 +30,16 @@ const LIVE_UPDATE_DEBOUNCE_MS = 400;
 
 export type SoundId = 'beep' | 'woodfish' | 'click' | 'bubble' | 'droplet';
 export type CoexistMode = 'mix' | 'exclusive';
+/** 重音拍：0 = 关闭；2 / 4 = 每 2 / 4 拍首拍重音（帮助感知左右脚节奏）。 */
+export type AccentEvery = 0 | 2 | 4;
+export const ACCENT_OPTIONS: AccentEvery[] = [0, 2, 4];
+/** 渐进过渡（PRD §3.4 Ramp）时长，秒；0 = 关闭，按「自然收尾，立即换算」切换。 */
+export type RampSec = 0 | 10 | 20 | 30;
+export const RAMP_OPTIONS: RampSec[] = [0, 10, 20, 30];
+// 换段前倒数提示音：剩余 3 / 2 / 1 秒各一声，叠在最近的拍点上。
+const CUE_COUNTDOWN_SEC = [3, 2, 1];
+// 换段提示 / 渐进过渡的检查频率；实际发声由引擎对齐到拍点。
+const PHASE_TICK_MS = 250;
 
 export interface SoundDef {
   id: SoundId;
@@ -79,6 +89,9 @@ interface Engine {
   setSound: (s: SoundId) => void;
   setMix: (mix: boolean) => void;
   setDucking: (duck: boolean) => void;
+  rampTo: (bpm: number, durationMs: number) => void;
+  setAccent: (every: number) => void;
+  cue: () => void;
 }
 
 interface CadenceState {
@@ -89,6 +102,9 @@ interface CadenceState {
   beatVolume: number; // 0..1, independent of media volume
   ducking: boolean;
   keepAwake: boolean;
+  accentEvery: AccentEvery;
+  phaseCue: boolean;
+  rampSec: RampSec;
   plans: TrainingPlan[];
   activePlanId: string;
   plan: PlanPhase[];
@@ -97,6 +113,8 @@ interface CadenceState {
   phaseIndex: number;
   /** 当前阶段结束的绝对时间戳（ms），仅 running 时有效；秒级倒计时由 running 页本地推导。 */
   phaseEndAtMs: number;
+  /** 渐进过渡进行中时的目标 BPM（下一阶段），否则为 null。 */
+  rampTarget: number | null;
   /** true when real audio output is wired (native or web), false in Expo Go. */
   audioReady: boolean;
 }
@@ -110,6 +128,9 @@ interface CadenceApi extends CadenceState {
   setBeatVolume: (v: number) => void;
   setDucking: (b: boolean) => void;
   setKeepAwake: (b: boolean) => void;
+  setAccentEvery: (n: AccentEvery) => void;
+  setPhaseCue: (b: boolean) => void;
+  setRampSec: (n: RampSec) => void;
   setActivePlanId: (id: string) => void;
   createPlan: () => string;
   importPlan: (importedPlan: { name: string; phases: Array<{ name: string; durationSec: number; bpm: number }> }) => string;
@@ -141,6 +162,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
         setSound: (s) => CadenceAudio.setSound(s),
         setMix: (m) => CadenceAudio.setMixWithOthers(m),
         setDucking: (d) => CadenceAudio.setDucking(d),
+        rampTo: (b, ms) => CadenceAudio.rampTo(b, ms),
+        setAccent: (n) => CadenceAudio.setAccent(n),
+        cue: () => CadenceAudio.cue(),
       };
     }
     const s = schedulerRef.current;
@@ -153,6 +177,10 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       setSound: () => {},
       setMix: () => {},
       setDucking: () => {},
+      // 渐进过渡影响拍点时间，JS 兜底同样实现以保持视觉同步；重音 / 提示音只关乎发声，Expo Go 无声故为空。
+      rampTo: (b, ms) => s.rampTo(b, ms),
+      setAccent: () => {},
+      cue: () => {},
     };
   }, [audioReady]);
 
@@ -165,6 +193,15 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   const [beatVolume, setBeatVolumeState] = useState(0.72);
   const [ducking, setDuckingState] = useState(false);
   const [keepAwake, setKeepAwake] = useState(true);
+  const [accentEvery, setAccentEveryState] = useState<AccentEvery>(0);
+  const [phaseCue, setPhaseCue] = useState(true);
+  const [rampSec, setRampSec] = useState<RampSec>(0);
+  const [rampTarget, setRampTargetState] = useState<number | null>(null);
+  const rampTargetRef = useRef<number | null>(null);
+  const setRampTarget = useCallback((v: number | null) => {
+    rampTargetRef.current = v;
+    setRampTargetState(v);
+  }, []);
   const [plans, setPlans] = useState<TrainingPlan[]>(() => [
     { id: 'default', name: t('plan.defaultName', { number: 1 }), phases: createDefaultPlan(t) },
   ]);
@@ -195,21 +232,25 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   const setBpm = useCallback(
     (n: number) => {
       const v = clampBpm(n);
+      setRampTarget(null);
       setBpmState(v);
       engine.setBpm(v);
     },
-    [engine],
+    [engine, setRampTarget],
   );
 
   const step = useCallback(
     (delta: number) => {
+      // 渐进过渡中微调：以过渡目标为基准（用户已在向下一阶段加速），并取消过渡。
+      const rampBase = rampTargetRef.current;
+      setRampTarget(null);
       setBpmState((prev) => {
-        const v = clampBpm(prev + delta);
+        const v = clampBpm((rampBase ?? prev) + delta);
         engine.setBpm(v);
         return v;
       });
     },
-    [engine],
+    [engine, setRampTarget],
   );
 
   // Android 13+ 需要运行时通知授权，前台服务卡片才能正常显示。
@@ -286,6 +327,14 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     [engine],
   );
 
+  const setAccentEvery = useCallback(
+    (n: AccentEvery) => {
+      setAccentEveryState(n);
+      engine.setAccent(n);
+    },
+    [engine],
+  );
+
   // ── Persistence (PRD §4.2: plans + usual cadence settings survive restarts) ──
   // Session-only fields (isPlaying/running/phase progress) are deliberately
   // excluded — the app always launches paused, and mid-workout progress isn't
@@ -322,6 +371,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
           if (Number.isFinite(saved.beatVolume)) setBeatVolume(saved.beatVolume);
           if (typeof saved.ducking === 'boolean') setDucking(saved.ducking);
           if (typeof saved.keepAwake === 'boolean') setKeepAwake(saved.keepAwake);
+          if (ACCENT_OPTIONS.includes(saved.accentEvery)) setAccentEvery(saved.accentEvery);
+          if (typeof saved.phaseCue === 'boolean') setPhaseCue(saved.phaseCue);
+          if (RAMP_OPTIONS.includes(saved.rampSec)) setRampSec(saved.rampSec);
           if (Array.isArray(saved.plans) && saved.plans.length > 0 && saved.plans.every(isValidPlan)) {
             // 旧版本/异常数据可能存有越界数值，水合时统一钳制到合法范围。
             const sanitizedPlans = (saved.plans as TrainingPlan[]).map((p) => ({
@@ -350,13 +402,15 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     const timer = setTimeout(() => {
-      const payload = JSON.stringify({ bpm, sound, coexist, beatVolume, ducking, keepAwake, plans, activePlanId });
+      const payload = JSON.stringify({
+        bpm, sound, coexist, beatVolume, ducking, keepAwake, accentEvery, phaseCue, rampSec, plans, activePlanId,
+      });
       AsyncStorage.setItem(STORAGE_KEY, payload).catch((error) => {
         logger.warn('保存本地存档失败。', error);
       });
     }, PERSIST_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [hydrated, bpm, sound, coexist, beatVolume, ducking, keepAwake, plans, activePlanId]);
+  }, [hydrated, bpm, sound, coexist, beatVolume, ducking, keepAwake, accentEvery, phaseCue, rampSec, plans, activePlanId]);
 
   // 仅在用户开启常亮且节拍播放时保持屏幕唤醒，停止播放后立即释放。
   useEffect(() => {
@@ -383,6 +437,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     engine.setSound(sound);
     engine.setVolume(beatVolume);
     engine.setDucking(ducking);
+    engine.setAccent(accentEvery);
     if (isPlaying) engine.start(bpm);
     return () => engine.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -444,6 +499,43 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   }, [plan, engine, phaseIndex]);
 
   const skipPhase = useCallback(() => advancePhase(), [advancePhase]);
+
+  // 阶段尾声：换段倒数提示音 + 渐进过渡（PRD §3.4）。按剩余时间轮询触发，
+  // 暂停 / 换段 / 恢复时整体重建；发声时刻由引擎对齐到拍点，不破坏零漂移。
+  useEffect(() => {
+    if (!running || !isPlaying) return;
+    const current = plan[phaseIndex];
+    const next = plan[phaseIndex + 1];
+    // 过渡最多占当前阶段的一半，避免短阶段整段都在变速。
+    const rampMs = current ? Math.min(rampSec * 1000, (current.durationSec * 1000) / 2) : 0;
+    const canRamp = rampMs > 0 && !!next && next.bpm !== current?.bpm;
+    const firedCues = new Set<number>();
+    let ramped = false;
+
+    const tick = () => {
+      const remaining = phaseEndRef.current - Date.now();
+      if (phaseCue) {
+        for (const sec of CUE_COUNTDOWN_SEC) {
+          // 只响当前所在的那一秒；恢复播放时已错过的倒数不补发。
+          if (!firedCues.has(sec) && remaining <= sec * 1000 && remaining > (sec - 1) * 1000) {
+            firedCues.add(sec);
+            engine.cue();
+          }
+        }
+      }
+      if (canRamp && !ramped && remaining <= rampMs && remaining > PHASE_TICK_MS) {
+        ramped = true;
+        engine.rampTo(next.bpm, remaining);
+        setRampTarget(next.bpm);
+      }
+    };
+    tick();
+    const timer = setInterval(tick, PHASE_TICK_MS);
+    return () => {
+      clearInterval(timer);
+      setRampTarget(null);
+    };
+  }, [running, isPlaying, phaseIndex, phaseEndAtMs, plan, phaseCue, rampSec, engine, setRampTarget]);
 
   // ── Plan management (multiple named training plans) ────────────────
   const createPlan = useCallback(() => {
@@ -654,12 +746,16 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       beatVolume,
       ducking,
       keepAwake,
+      accentEvery,
+      phaseCue,
+      rampSec,
       plans,
       activePlanId,
       plan,
       running,
       phaseIndex,
       phaseEndAtMs,
+      rampTarget,
       audioReady,
       setBpm,
       step,
@@ -669,6 +765,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       setBeatVolume,
       setDucking,
       setKeepAwake,
+      setAccentEvery,
+      setPhaseCue,
+      setRampSec,
       setActivePlanId,
       createPlan,
       importPlan,
@@ -682,9 +781,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       updatePhase,
     }),
     [
-      bpm, isPlaying, sound, coexist, beatVolume, ducking, keepAwake, plans,
-      activePlanId, plan, running, phaseIndex, phaseEndAtMs, audioReady,
-      setBpm, step, togglePlay, setSound, setCoexist, setBeatVolume, setDucking,
+      bpm, isPlaying, sound, coexist, beatVolume, ducking, keepAwake, accentEvery, phaseCue, rampSec, plans,
+      activePlanId, plan, running, phaseIndex, phaseEndAtMs, rampTarget, audioReady,
+      setBpm, step, togglePlay, setSound, setCoexist, setBeatVolume, setDucking, setAccentEvery,
       createPlan, importPlan, renamePlan, deletePlan, startWorkout,
       stopWorkout, skipPhase, addPhase, removePhase, updatePhase,
     ],

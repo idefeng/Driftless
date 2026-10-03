@@ -4,6 +4,11 @@ import AVFoundation
 // Order matters: index === position in this array.
 private let SOUND_IDS = ["beep", "woodfish", "click", "bubble", "droplet"]
 
+// Click buffer layout: [0, N) normal timbres, [N, 2N) accent variants (same
+// grain, pitched up a fifth), then one phase-change cue chirp.
+private let SOUND_COUNT = SOUND_IDS.count
+private let CUE_INDEX = SOUND_COUNT * 2
+
 private func soundIndex(_ id: String) -> Int {
   return SOUND_IDS.firstIndex(of: id) ?? 1
 }
@@ -22,6 +27,19 @@ private final class RTState {
   var volume: Float = 0.72
   var running: Bool = false
   var selectedSound: Int = 1 // woodfish
+  // 0 = no accent; N = every N-th beat (counted from start) is accented.
+  var accentEvery: Int = 0
+  // Set by cue(); consumed by the render thread at the next beat boundary.
+  var cuePending: Bool = false
+
+  // Linear BPM ramp (PRD §3.4). rampTo() writes the target into intervalSamples
+  // up front, so a finished/cancelled ramp already leaves the right interval.
+  var rampActive: Bool = false
+  var rampFromBpm: Double = 180
+  var rampToBpm: Double = 180
+  var rampTotalSamples: Int = 1
+  var rampElapsed: Int = 0
+  var sampleRate: Double = 48000
 
   // Owned by the render thread only.
   var samplesUntilNextBeat: Int = 0
@@ -36,6 +54,15 @@ private final class RTState {
   var voiceActive = [Bool](repeating: false, count: voiceCount)
   var voiceSound = [Int](repeating: 0, count: voiceCount)
   var voicePos = [Int](repeating: 0, count: voiceCount)
+
+  func startVoice(_ bufferIndex: Int) {
+    for v in 0..<RTState.voiceCount where !voiceActive[v] {
+      voiceActive[v] = true
+      voiceSound[v] = bufferIndex
+      voicePos[v] = 0
+      return
+    }
+  }
 }
 
 public class CadenceAudioModule: Module {
@@ -46,6 +73,7 @@ public class CadenceAudioModule: Module {
   private var prepared = false
   private var mixWithOthers = true
   private var ducking = false
+  private var currentBpm: Double = 180
 
   private var wasRunningBeforeInterruption = false
 
@@ -63,8 +91,12 @@ public class CadenceAudioModule: Module {
     }
 
     Function("start") { (bpm: Double) in
-      self.rt.intervalSamples = self.intervalSamplesFor(bpm)
+      // prepare first: it resolves the session sample rate the interval depends on.
       if !self.prepared { self.prepare(mix: self.mixWithOthers) }
+      self.rt.rampActive = false
+      self.rt.cuePending = false
+      self.currentBpm = clampBpm(bpm)
+      self.rt.intervalSamples = self.intervalSamplesFor(bpm)
       self.rt.samplesUntilNextBeat = 0 // fire the first beat immediately
       self.rt.beatCounter = 0
       self.rt.running = true
@@ -76,7 +108,32 @@ public class CadenceAudioModule: Module {
     }
 
     Function("setBpm") { (bpm: Double) in
+      self.rt.rampActive = false // an explicit rate always wins over an in-flight ramp
+      self.currentBpm = clampBpm(bpm)
       self.rt.intervalSamples = self.intervalSamplesFor(bpm)
+    }
+
+    Function("rampTo") { (bpm: Double, durationMs: Double) in
+      let target = clampBpm(bpm)
+      let total = Int(durationMs / 1000.0 * self.sampleRate)
+      self.rt.rampActive = false
+      if self.rt.running && total > 0 && target != self.currentBpm {
+        self.rt.rampFromBpm = self.currentBpm
+        self.rt.rampToBpm = target
+        self.rt.rampTotalSamples = total
+        self.rt.rampElapsed = 0
+        self.rt.rampActive = true
+      }
+      self.currentBpm = target
+      self.rt.intervalSamples = self.intervalSamplesFor(target)
+    }
+
+    Function("setAccent") { (every: Int) in
+      self.rt.accentEvery = max(0, every)
+    }
+
+    Function("cue") {
+      if self.rt.running { self.rt.cuePending = true }
     }
 
     Function("setVolume") { (v: Double) in
@@ -122,6 +179,7 @@ public class CadenceAudioModule: Module {
     // music before the user presses play). Activation happens in
     // ensureEngineRunning(), deactivation in stopPlayback().
     sampleRate = session.sampleRate
+    rt.sampleRate = sampleRate
   }
 
   private func prepare(mix: Bool) {
@@ -166,21 +224,30 @@ public class CadenceAudioModule: Module {
 
         // Beat boundary — sample-exact.
         if running {
+          if rt.rampActive { rt.rampElapsed &+= 1 }
           rt.samplesUntilNextBeat -= 1
           if rt.samplesUntilNextBeat <= 0 {
-            let si = rt.selectedSound
-            for v in 0..<RTState.voiceCount where !rt.voiceActive[v] {
-              rt.voiceActive[v] = true
-              rt.voiceSound[v] = si
-              rt.voicePos[v] = 0
-              break
+            let acc = rt.accentEvery
+            let accented = acc > 0 && rt.beatCounter % acc == 0
+            rt.startVoice(accented ? rt.selectedSound + SOUND_COUNT : rt.selectedSound)
+            if rt.cuePending {
+              rt.cuePending = false
+              rt.startVoice(CUE_INDEX)
             }
-            rt.samplesUntilNextBeat += max(1, interval) // re-rate at the boundary
+            var next = interval
+            if rt.rampActive {
+              let p = min(1.0, Double(rt.rampElapsed) / Double(max(1, rt.rampTotalSamples)))
+              let b = rt.rampFromBpm + (rt.rampToBpm - rt.rampFromBpm) * p
+              next = Int((rt.sampleRate * 60.0 / b).rounded())
+              if p >= 1.0 { rt.rampActive = false }
+            }
+            rt.samplesUntilNextBeat += max(1, next) // re-rate at the boundary
             rt.beatCounter &+= 1
           }
         }
 
-        s *= vol
+        // Cue + click can overlap; hard-limit so the sum never clips harshly.
+        s = min(1, max(-1, s * vol))
         for ch in 0..<channels {
           if let mdata = abl[ch].mData {
             mdata.assumingMemoryBound(to: Float.self)[frame] = s
@@ -221,13 +288,43 @@ public class CadenceAudioModule: Module {
       (480, 0.025, 0.075, 0.22),  // bubble
       (2600, 0.02, 0.05, 0.03),   // droplet
     ]
-    for g in grains {
-      let arr = synth(freq: g.0, decay: g.1, dur: g.2, noise: g.3, sr: sampleRate)
+    var buffers: [[Float]] = grains.map { synth(freq: $0.0, decay: $0.1, dur: $0.2, noise: $0.3, sr: sampleRate) }
+    // Accent: same grain a fifth higher — clearly distinct, equally loud.
+    buffers += grains.map { synth(freq: $0.0 * 1.5, decay: $0.1, dur: $0.2, noise: $0.3, sr: sampleRate) }
+    buffers.append(synthCue(sr: sampleRate))
+    for arr in buffers {
       let ptr = UnsafeMutablePointer<Float>.allocate(capacity: arr.count)
       ptr.initialize(from: arr, count: arr.count)
       rt.bufPtrs.append(ptr)
       rt.bufLens.append(arr.count)
     }
+  }
+
+  /// Rising two-note chirp (B5 → E6) marking an upcoming phase change.
+  private func synthCue(sr: Double) -> [Float] {
+    let len = Int(0.17 * sr)
+    let split = Int(0.075 * sr)
+    let fadeOut = max(1, Int(0.002 * sr))
+    var data = [Float](repeating: 0, count: len)
+    var peak: Float = 0
+    for i in 0..<len {
+      let first = i < split
+      let local = first ? i : i - split
+      let t = Double(local) / sr
+      let freq = first ? 988.0 : 1319.0
+      let decay = first ? 0.03 : 0.045
+      var s = Float(sin(2.0 * Double.pi * freq * t) * exp(-t / decay))
+      if local < 32 { s *= Float(local) / 32.0 } // zero-edge attack on both notes
+      if first && i > split - fadeOut { s *= Float(split - i) / Float(fadeOut) }
+      if i > len - fadeOut { s *= Float(len - i) / Float(fadeOut) }
+      data[i] = s
+      peak = max(peak, abs(s))
+    }
+    if peak > 0 {
+      let norm = 0.6 / peak
+      for i in 0..<len { data[i] *= norm }
+    }
+    return data
   }
 
   private func synth(freq: Double, decay: Double, dur: Double, noise: Double, sr: Double) -> [Float] {

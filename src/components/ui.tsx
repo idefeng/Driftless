@@ -62,6 +62,45 @@ export function Toggle({
   );
 }
 
+// ── Segmented picker (small option sets: accent, ramp length…) ─────────
+export function Segmented<T extends string | number>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  label?: string;
+}) {
+  const { c } = useTheme();
+  return (
+    <View style={[styles.segmentRow, { backgroundColor: c.cardAlt }]} accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {options.map((o) => {
+        const active = o.value === value;
+        return (
+          <Pressable
+            key={String(o.value)}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={o.label}
+            style={[
+              styles.segmentBtn,
+              active && { backgroundColor: c.chipAccent, borderColor: c.brand },
+            ]}
+          >
+            <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: active ? c.brandText : c.textMuted }}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // ── Circular icon button (header back / menu) ──────────────────────────
 export function RoundIconButton({
   onPress,
@@ -248,6 +287,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 2,
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    gap: 4,
+    padding: 4,
+    borderRadius: 14,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 11,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   roundBtn: {
     alignItems: 'center',

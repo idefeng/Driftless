@@ -26,6 +26,15 @@ export const CadenceAudio = {
   setBpm(bpm: number): void {
     Native?.setBpm(bpm);
   },
+  rampTo(bpm: number, durationMs: number): void {
+    Native?.rampTo(bpm, durationMs);
+  },
+  setAccent(every: number): void {
+    Native?.setAccent(every);
+  },
+  cue(): void {
+    Native?.cue();
+  },
   setVolume(volume: number): void {
     Native?.setVolume(volume);
   },

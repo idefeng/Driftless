@@ -21,11 +21,16 @@ import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
 // Order matters: index === position in this list.
 private val SOUND_IDS = listOf("beep", "woodfish", "click", "bubble", "droplet")
+// Click buffer layout: [0, N) normal timbres, [N, 2N) accent variants (same
+// grain, pitched up a fifth), then one phase-change cue chirp.
+private val SOUND_COUNT = SOUND_IDS.size
+private val CUE_INDEX = SOUND_COUNT * 2
 private fun soundIndex(id: String): Int = SOUND_IDS.indexOf(id).let { if (it < 0) 1 else it }
 private fun clampBpm(b: Double): Double = min(250.0, max(100.0, Math.round(b).toDouble()))
 
@@ -36,6 +41,11 @@ private fun clampBpm(b: Double): Double = min(250.0, max(100.0, Math.round(b).to
  * exact sample offset via a `samplesUntilNextBeat` counter that re-reads the live
  * interval at every beat — zero accumulating drift, sub-sample jitter. The blocking
  * `AudioTrack.write` paces the loop to the hardware clock.
+ *
+ * Accent beats (every N-th) swap in a pitched-up variant of the same grain; a
+ * phase-change cue is layered onto the next beat so it can never land off-grid.
+ * `rampTo` linearly glides the BPM (PRD §3.4 Ramp): each beat boundary re-derives
+ * its interval from the ramp progress counted in samples, so ramps add no drift.
  *
  * Beats route through USAGE_MEDIA so hardware volume keys control them like
  * music. Audio focus is applied per mode: no focus for mix, GAIN for exclusive,
@@ -50,6 +60,20 @@ class CadenceAudioModule : Module() {
   @Volatile private var beatCounter = 0
   @Volatile private var mixWithOthers = true
   @Volatile private var ducking = false
+  @Volatile private var currentBpm = 180.0
+  // 0 = no accent; N = every N-th beat (counted from start) is accented.
+  @Volatile private var accentEvery = 0
+  // Set by cue(); consumed by the render thread at the next beat boundary.
+  @Volatile private var cuePending = false
+
+  // Linear BPM ramp. rampTo() writes the target into intervalSamples up front,
+  // so when the ramp finishes (or is cancelled by setBpm) the plain interval is
+  // already correct; while active, each beat interpolates from→to by progress.
+  @Volatile private var rampActive = false
+  @Volatile private var rampFromBpm = 180.0
+  @Volatile private var rampToBpm = 180.0
+  @Volatile private var rampTotalSamples = 1
+  @Volatile private var rampElapsed = 0
 
   // Audio focus reflects the playback mode (see applyFocus): GAIN for exclusive
   // (others pause), TRANSIENT_MAY_DUCK for coexist+ducking (others lower), and
@@ -124,8 +148,12 @@ class CadenceAudioModule : Module() {
     Function("prepare") { mix: Boolean -> prepare(mix) }
 
     Function("start") { bpm: Double ->
-      intervalSamples = intervalSamplesFor(bpm)
+      // prepare first: it resolves the device sample rate the interval depends on.
       if (!prepared) prepare(mixWithOthers)
+      rampActive = false
+      cuePending = false
+      currentBpm = clampBpm(bpm)
+      intervalSamples = intervalSamplesFor(bpm)
       samplesUntilNextBeat = 0 // first beat fires immediately
       beatCounter = 0
       running = true
@@ -138,7 +166,36 @@ class CadenceAudioModule : Module() {
       applyFocus()
     }
 
-    Function("setBpm") { bpm: Double -> intervalSamples = intervalSamplesFor(bpm) }
+    Function("setBpm") { bpm: Double ->
+      rampActive = false // an explicit rate always wins over an in-flight ramp
+      currentBpm = clampBpm(bpm)
+      intervalSamples = intervalSamplesFor(bpm)
+    }
+
+    Function("rampTo") { bpm: Double, durationMs: Double ->
+      val target = clampBpm(bpm)
+      val total = (durationMs / 1000.0 * sampleRate).toInt()
+      rampActive = false
+      if (running && total > 0 && target != currentBpm) {
+        rampFromBpm = currentBpm
+        rampToBpm = target
+        rampTotalSamples = total
+        rampElapsed = 0
+        rampActive = true
+      }
+      currentBpm = target
+      intervalSamples = intervalSamplesFor(target)
+    }
+
+    Function("setAccent") { every: Int -> accentEvery = max(0, every) }
+
+    Function("cue") {
+      // 停止时不挂起提示，避免下次 start 的第一拍误响。
+      if (running) {
+        cuePending = true
+      }
+      Unit
+    }
 
     Function("setVolume") { v: Double -> volume = min(1.0, max(0.0, v)).toFloat() }
 
@@ -240,23 +297,30 @@ class CadenceAudioModule : Module() {
         }
 
         if (isRun) {
+          if (rampActive) rampElapsed += 1
           samplesUntilNextBeat -= 1
           if (samplesUntilNextBeat <= 0) {
-            val si = selectedSound
-            for (v in 0 until voiceCount) {
-              if (!voiceActive[v]) {
-                voiceActive[v] = true
-                voiceSound[v] = si
-                voicePos[v] = 0
-                break
-              }
+            val acc = accentEvery
+            val accented = acc > 0 && beatCounter % acc == 0
+            startVoice(if (accented) selectedSound + SOUND_COUNT else selectedSound)
+            if (cuePending) {
+              cuePending = false
+              startVoice(CUE_INDEX)
             }
-            samplesUntilNextBeat += max(1, interval) // re-rate at the boundary
+            var next = interval
+            if (rampActive) {
+              val p = min(1.0, rampElapsed.toDouble() / max(1, rampTotalSamples))
+              val b = rampFromBpm + (rampToBpm - rampFromBpm) * p
+              next = (sampleRate * 60.0 / b).roundToInt()
+              if (p >= 1.0) rampActive = false
+            }
+            samplesUntilNextBeat += max(1, next) // re-rate at the boundary
             beatCounter += 1
           }
         }
 
-        s *= vol
+        // Cue + click can overlap; hard-limit so the sum never wraps/clips harshly.
+        s = (s * vol).coerceIn(-1f, 1f)
         val o = i * channels
         out[o] = s
         out[o + 1] = s
@@ -264,6 +328,17 @@ class CadenceAudioModule : Module() {
 
       val written = t.write(out, 0, out.size, AudioTrack.WRITE_BLOCKING)
       if (written < 0) break
+    }
+  }
+
+  private fun startVoice(bufferIndex: Int) {
+    for (v in 0 until voiceCount) {
+      if (!voiceActive[v]) {
+        voiceActive[v] = true
+        voiceSound[v] = bufferIndex
+        voicePos[v] = 0
+        return
+      }
     }
   }
 
@@ -279,7 +354,37 @@ class CadenceAudioModule : Module() {
       doubleArrayOf(480.0, 0.025, 0.075, 0.22),  // bubble
       doubleArrayOf(2600.0, 0.02, 0.05, 0.03),   // droplet
     )
-    clickBuffers = Array(grains.size) { synth(grains[it][0], grains[it][1], grains[it][2], grains[it][3]) }
+    val normal = Array(grains.size) { synth(grains[it][0], grains[it][1], grains[it][2], grains[it][3]) }
+    // Accent: same grain a fifth higher — clearly distinct, equally loud.
+    val accent = Array(grains.size) { synth(grains[it][0] * 1.5, grains[it][1], grains[it][2], grains[it][3]) }
+    clickBuffers = normal + accent + arrayOf(synthCue())
+  }
+
+  /** Rising two-note chirp (B5 → E6) marking an upcoming phase change. */
+  private fun synthCue(): FloatArray {
+    val len = (0.17 * sampleRate).toInt()
+    val split = (0.075 * sampleRate).toInt()
+    val fadeOut = max(1, (0.002 * sampleRate).toInt())
+    val data = FloatArray(len)
+    var peak = 0f
+    for (i in 0 until len) {
+      val first = i < split
+      val local = if (first) i else i - split
+      val t = local.toDouble() / sampleRate
+      val freq = if (first) 988.0 else 1319.0
+      val decay = if (first) 0.03 else 0.045
+      var s = (sin(2.0 * PI * freq * t) * exp(-t / decay)).toFloat()
+      if (local < 32) s *= local / 32f // zero-edge attack on both notes
+      if (first && i > split - fadeOut) s *= (split - i).toFloat() / fadeOut
+      if (i > len - fadeOut) s *= (len - i).toFloat() / fadeOut
+      data[i] = s
+      if (abs(s) > peak) peak = abs(s)
+    }
+    if (peak > 0) {
+      val norm = 0.6f / peak
+      for (i in 0 until len) data[i] *= norm
+    }
+    return data
   }
 
   private fun synth(freq: Double, decay: Double, dur: Double, noise: Double): FloatArray {

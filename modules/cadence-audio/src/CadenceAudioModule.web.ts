@@ -10,6 +10,10 @@ import { CadenceAudioModuleEvents, CadenceSoundId } from './CadenceAudio.types';
  * AudioContext time falls inside the SCHEDULE_AHEAD window. Beat times are
  * derived from a sample-accurate `nextBeatTime` accumulator re-read against the
  * live BPM each beat, so there is no accumulating-timer drift.
+ *
+ * Accent / cue / ramp mirror the native engines: accent beats use a pitched-up
+ * grain, cues are layered onto an already-scheduled beat time, and ramps
+ * re-derive each beat's interval from progress on the AudioContext clock.
  */
 
 // 后台标签页 setInterval 会被节流到 ≥1s，前瞻窗口必须大于该值否则必然欠载断拍；
@@ -37,6 +41,12 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
   private nextBeatTime = 0;
   private beatIndex = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
+  private accentBuffers: Partial<Record<CadenceSoundId, AudioBuffer>> = {};
+  private cueBuffer: AudioBuffer | null = null;
+  private accentEvery = 0;
+  // Beat times already handed to WebAudio (look-ahead window), oldest first.
+  private scheduledBeats: number[] = [];
+  private ramp: { from: number; to: number; startTime: number; duration: number } | null = null;
 
   get isRunning(): boolean {
     return this.running;
@@ -50,7 +60,38 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
     this.ctx = new Ctx();
     (Object.keys(GRAINS) as CadenceSoundId[]).forEach((id) => {
       this.buffers[id] = this.synth(GRAINS[id]);
+      // Accent: same grain a fifth higher — clearly distinct, equally loud.
+      this.accentBuffers[id] = this.synth({ ...GRAINS[id], freq: GRAINS[id].freq * 1.5 });
     });
+    this.cueBuffer = this.synthCue();
+  }
+
+  /** Rising two-note chirp (B5 → E6) marking an upcoming phase change. */
+  private synthCue(): AudioBuffer {
+    const ctx = this.ctx!;
+    const sr = ctx.sampleRate;
+    const len = Math.floor(0.17 * sr);
+    const split = Math.floor(0.075 * sr);
+    const fadeOut = Math.max(1, Math.floor(0.002 * sr));
+    const buf = ctx.createBuffer(1, len, sr);
+    const data = buf.getChannelData(0);
+    let peak = 0;
+    for (let i = 0; i < len; i++) {
+      const first = i < split;
+      const local = first ? i : i - split;
+      const t = local / sr;
+      let s = Math.sin(2 * Math.PI * (first ? 988 : 1319) * t) * Math.exp(-t / (first ? 0.03 : 0.045));
+      if (local < 32) s *= local / 32; // zero-edge attack on both notes
+      if (first && i > split - fadeOut) s *= (split - i) / fadeOut;
+      if (i > len - fadeOut) s *= (len - i) / fadeOut;
+      data[i] = s;
+      peak = Math.max(peak, Math.abs(s));
+    }
+    if (peak > 0) {
+      const norm = 0.6 / peak;
+      for (let i = 0; i < len; i++) data[i] *= norm;
+    }
+    return buf;
   }
 
   private synth(g: ClickGrain): AudioBuffer {
@@ -79,13 +120,16 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
     return buf;
   }
 
-  private intervalSec(): number {
-    return 60 / this.bpm;
+  private intervalSec(at: number): number {
+    const r = this.ramp;
+    if (!r) return 60 / this.bpm;
+    const p = Math.min(1, Math.max(0, (at - r.startTime) / r.duration));
+    if (p >= 1) this.ramp = null;
+    return 60 / (r.from + (r.to - r.from) * p);
   }
 
-  private scheduleClick(at: number) {
+  private scheduleClick(at: number, buf: AudioBuffer | null | undefined) {
     const ctx = this.ctx!;
-    const buf = this.buffers[this.sound];
     if (!buf) return;
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -98,10 +142,14 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
   private tick = () => {
     if (!this.ctx || !this.running) return;
     const horizon = this.ctx.currentTime + SCHEDULE_AHEAD;
+    const now = this.ctx.currentTime;
+    while (this.scheduledBeats.length && this.scheduledBeats[0] < now) this.scheduledBeats.shift();
     while (this.nextBeatTime < horizon) {
-      this.scheduleClick(this.nextBeatTime);
+      const accented = this.accentEvery > 0 && this.beatIndex % this.accentEvery === 0;
+      this.scheduleClick(this.nextBeatTime, (accented ? this.accentBuffers : this.buffers)[this.sound]);
+      this.scheduledBeats.push(this.nextBeatTime);
       this.beatIndex += 1;
-      this.nextBeatTime += this.intervalSec(); // re-read BPM ⇒ instant re-rate
+      this.nextBeatTime += this.intervalSec(this.nextBeatTime); // re-read BPM ⇒ instant re-rate
     }
   };
 
@@ -118,6 +166,8 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
     if (this.ctx.state === 'suspended') await this.ctx.resume();
     if (this.running) return;
     this.running = true;
+    this.ramp = null;
+    this.scheduledBeats = [];
     this.beatIndex = 0;
     this.nextBeatTime = this.ctx.currentTime + 0.05;
     this.tick();
@@ -133,7 +183,30 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
   }
 
   setBpm(bpm: number): void {
+    this.ramp = null; // an explicit rate always wins over an in-flight ramp
     this.bpm = clampBpm(bpm);
+  }
+
+  rampTo(bpm: number, durationMs: number): void {
+    const target = clampBpm(bpm);
+    this.ramp =
+      this.running && this.ctx && durationMs > 0 && target !== this.bpm
+        ? { from: this.bpm, to: target, startTime: this.ctx.currentTime, duration: durationMs / 1000 }
+        : null;
+    this.bpm = target;
+  }
+
+  setAccent(every: number): void {
+    this.accentEvery = Math.max(0, Math.round(every));
+  }
+
+  cue(): void {
+    if (!this.ctx || !this.running) return;
+    // Land on the first already-scheduled beat that is still safely ahead,
+    // so the cue is always on-grid (same contract as native).
+    const soon = this.ctx.currentTime + 0.02;
+    const at = this.scheduledBeats.find((t) => t >= soon) ?? this.nextBeatTime;
+    this.scheduleClick(at, this.cueBuffer);
   }
 
   setVolume(volume: number): void {

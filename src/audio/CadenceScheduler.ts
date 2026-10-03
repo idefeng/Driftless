@@ -40,6 +40,7 @@ export class CadenceScheduler {
   private nextBeatTime = 0; // absolute ms timestamp of the next unscheduled beat
   private beatIndex = 0;
   private listeners = new Set<BeatListener>();
+  private ramp: { from: number; to: number; startMs: number; durationMs: number } | null = null;
 
   get isRunning() {
     return this.running;
@@ -49,8 +50,12 @@ export class CadenceScheduler {
     return this.bpm;
   }
 
-  private get intervalMs() {
-    return 60000 / this.bpm;
+  private intervalMsAt(atMs: number) {
+    const r = this.ramp;
+    if (!r) return 60000 / this.bpm;
+    const p = Math.min(1, Math.max(0, (atMs - r.startMs) / r.durationMs));
+    if (p >= 1) this.ramp = null;
+    return 60000 / (r.from + (r.to - r.from) * p);
   }
 
   onBeat(fn: BeatListener): () => void {
@@ -61,13 +66,25 @@ export class CadenceScheduler {
   setBpm(bpm: number) {
     // "Natural finish, instant re-rate" (PRD §3.4): the in-flight beat keeps its
     // original timing; everything from `nextBeatTime` onward uses the new rate.
+    this.ramp = null;
     this.bpm = clampBpm(bpm);
+  }
+
+  /** Linear BPM glide (PRD §3.4 Ramp) — mirrors the native engine for visual sync. */
+  rampTo(bpm: number, durationMs: number) {
+    const target = clampBpm(bpm);
+    this.ramp =
+      this.running && durationMs > 0 && target !== this.bpm
+        ? { from: this.bpm, to: target, startMs: Date.now(), durationMs }
+        : null;
+    this.bpm = target;
   }
 
   start(bpm?: number) {
     if (bpm != null) this.bpm = clampBpm(bpm);
     if (this.running) return;
     this.running = true;
+    this.ramp = null;
     const now = Date.now();
     this.nextBeatTime = now;
     this.beatIndex = 0;
@@ -102,7 +119,7 @@ export class CadenceScheduler {
         if (this.running) this.listeners.forEach((l) => l(idx, at));
       }, delay);
       this.beatIndex += 1;
-      this.nextBeatTime += this.intervalMs; // re-read interval ⇒ instant re-rate
+      this.nextBeatTime += this.intervalMsAt(this.nextBeatTime); // re-read interval ⇒ instant re-rate
     }
   }
 

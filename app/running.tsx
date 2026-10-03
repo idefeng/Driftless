@@ -15,7 +15,7 @@ export default function Running() {
   const { c, isDark } = useTheme();
   const { t } = useI18n();
   const router = useRouter();
-  const { plan, phaseIndex, phaseEndAtMs, running, bpm, isPlaying, step, togglePlay, skipPhase, stopWorkout } =
+  const { plan, phaseIndex, phaseEndAtMs, running, bpm, isPlaying, rampTarget, step, togglePlay, skipPhase, stopWorkout } =
     useCadence();
 
   const phase = plan[phaseIndex] ?? plan[0];
@@ -112,7 +112,18 @@ export default function Running() {
 
         <Text style={[styles.bpm, { color: c.textStrong }]}>{bpm}</Text>
 
-        <View style={{ marginTop: 18 }}>
+        {/* 固定高度占位：渐进过渡开始/结束时不推动下方布局 */}
+        <View style={styles.rampSlot}>
+          {rampTarget != null && (
+            <View style={[styles.rampPill, { backgroundColor: thermal.chipBg }]}>
+              <Text style={[styles.rampText, { color: thermal.text }]}>
+                {t('running.ramping', { bpm: rampTarget })}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={{ marginTop: 4 }}>
           <BeatBars
             color={thermal.base}
             centerColor={thermal.glow}
@@ -215,6 +226,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   kicker: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' },
+  rampSlot: { height: 26, marginTop: 6, justifyContent: 'center' },
+  rampPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 100 },
+  rampText: { fontFamily: fonts.bodyBold, fontSize: 12, fontVariant: ['tabular-nums'] },
   thermalBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
