@@ -2,7 +2,7 @@
   "expo": {
     "name": "Driftless",
     "slug": "driftless",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },

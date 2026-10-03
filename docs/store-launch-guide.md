@@ -6,16 +6,16 @@
 
 - 应用名：Driftless
 - Android 包名：`com.idefeng.driftless`
-- 当前版本：`1.0.3`（以 `app.json` 为准）
+- 当前版本：`1.1.0`（以 `app.json` 为准）
 - EAS 项目：`@idefeng/driftless`
 - EAS Project ID：`af22973b-c89f-4d59-b406-a2ae922cdc64`
 - EAS Update URL：`https://u.expo.dev/af22973b-c89f-4d59-b406-a2ae922cdc64`
-- OTA runtime 策略：`appVersion`（当前 `1.0.3` 原生包只接收同一 runtime 的 JS / 资源更新）
+- OTA runtime 策略：`appVersion`（当前 `1.1.0` 原生包只接收同一 runtime 的 JS / 资源更新）
 - Google Play AAB：<https://expo.dev/artifacts/eas/JaHgsSRSxxtIzemm9y6OW4zekgtBDbrzEVbx7jdf2Ew.aab>（versionCode `3`，包名 `com.fengqun.driftless`）
 - vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）
 - Google Play EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/e8d0d506-37da-402b-88a2-531bcbec8043>
 - vivo APK EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/b7a5fbed-1d7b-4f54-9c3b-c8812177c1e3>
-- 历史 `1.0.0` AAB / APK 未内置 OTA，不建议继续上传。下方列出的 AAB / APK 产物均构建于 `1.0.1` 源码，其 runtimeVersion 为 `1.0.1`，与当前 `1.0.3` 的 OTA runtime 不互通；上架前需按当前源码重新走 EAS build。
+- 历史 `1.0.0` AAB / APK 未内置 OTA，不建议继续上传。下方列出的 AAB / APK 产物均构建于 `1.0.1` 源码，其 runtimeVersion 为 `1.0.1`，与当前 `1.1.0` 的 OTA runtime 不互通；上架前需按当前源码重新走 EAS build。
 - 重要状态：Android 包名已于 2026-07-12 改回 `com.idefeng.driftless`。此前（2026-07-01）曾因该包名在当前新 Google Play 账号下无法创建应用，改用 `com.fengqun.driftless` 并已产出对应 Google Play AAB（versionCode `3`，见下方链接）——**该包名冲突尚未解决**，若要继续用 `com.idefeng.driftless` 提交 Google Play，需要先确认 Play Console 是否接受这个包名，否则仍需回退到 `com.fengqun.driftless` 或另择包名。vivo/国内渠道全程使用的都是 `com.idefeng.driftless`，不受此次改动影响。不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或本地 `android/app/build/outputs/apk/release/app-release.apk`。
 
 ## 推荐上架顺序

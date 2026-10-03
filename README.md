@@ -85,7 +85,7 @@ App 使用 `expo-localization` 读取设备系统地区，不使用 GPS / IP / �
 ## OTA 更新
 
 Driftless 使用 `expo-updates` + EAS Update。`app.json` 中的
-`runtimeVersion.policy` 为 `appVersion`，当前 `1.0.3` 原生包只接收同一
+`runtimeVersion.policy` 为 `appVersion`，当前 `1.1.0` 原生包只接收同一
 runtime 的 JS / 资源更新。启动后和回到前台时，App 会检查 OTA；更新下载完成后
 提示用户重启，避免训练中被强制刷新。
 
