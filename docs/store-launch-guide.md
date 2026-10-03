@@ -10,7 +10,7 @@
 - EAS 项目：`@idefeng/driftless`
 - EAS Project ID：`af22973b-c89f-4d59-b406-a2ae922cdc64`
 - EAS Update URL：`https://u.expo.dev/af22973b-c89f-4d59-b406-a2ae922cdc64`
-- OTA runtime 策略：`appVersion`（当前 `1.1.0` 原生包只接收同一 runtime 的 JS / 资源更新）
+- OTA runtime 策略：`fingerprint`（2026-10-03 起；原生层变化即自动换 runtime，OTA 只下发给原生一致的包）。例外：已上架审核的 1.1.0（versionCode 11）构建于切换前，runtime 固定为 `1.1.0`，给它发 OTA 的方法见 README「OTA 更新」。
 - Google Play AAB：<https://expo.dev/artifacts/eas/JaHgsSRSxxtIzemm9y6OW4zekgtBDbrzEVbx7jdf2Ew.aab>（versionCode `3`，包名 `com.fengqun.driftless`）
 - vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）
 - Google Play EAS 构建：<https://expo.dev/accounts/idefeng/projects/driftless/builds/e8d0d506-37da-402b-88a2-531bcbec8043>

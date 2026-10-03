@@ -4,7 +4,7 @@
     "slug": "driftless",
     "version": "1.1.0",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "scheme": "driftless",
     "orientation": "default",

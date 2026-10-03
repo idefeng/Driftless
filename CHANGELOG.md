@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- OTA `runtimeVersion` 策略由 `appVersion` 改为 `fingerprint`：原生层任何变化都会自动换 runtime，OTA 只下发给原生一致的安装包，避免同版本号的不同原生包（如 1.1.0 vc10 / vc11）收到不兼容的 JS。已用 `eas fingerprint:compare` 确认本地与 EAS 构建的指纹一致。注意：1.1.0（vc11）构建于切换前，runtime 固定为 `1.1.0`，给它发热修复需临时指定该 runtime（见 README）。
+
 ## 1.1.0 · 2026-10-03
 
 - 依赖补丁更新至 Expo SDK 56 推荐版本：`expo` 56.0.23、`expo-router` 56.2.21、`expo-updates` 56.0.28、`expo-splash-screen` 56.0.15、`expo-constants` / `expo-linking` / `@expo/metro-runtime`、`react-native-screens` 4.26.2；补齐 `@expo/dom-webview` 对等依赖。

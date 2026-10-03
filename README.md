@@ -85,9 +85,18 @@ App 使用 `expo-localization` 读取设备系统地区，不使用 GPS / IP / �
 ## OTA 更新
 
 Driftless 使用 `expo-updates` + EAS Update。`app.json` 中的
-`runtimeVersion.policy` 为 `appVersion`，当前 `1.1.0` 原生包只接收同一
-runtime 的 JS / 资源更新。启动后和回到前台时，App 会检查 OTA；更新下载完成后
-提示用户重启，避免训练中被强制刷新。
+`runtimeVersion.policy` 为 `fingerprint`：runtime 由原生层指纹（原生依赖、本地模块
+`modules/*`、config plugin、`app.json` 原生配置、图标 / 启动屏等）自动计算。只要原生层
+有任何变化，runtime 就会变，OTA 只会下发给原生层完全一致的安装包，不会把依赖新原生
+模块的 JS 推给旧包。启动后和回到前台时，App 会检查 OTA；更新下载完成后提示用户重启，
+避免训练中被强制刷新。
+
+- 查看当前 runtime：`npx expo-updates runtimeversion:resolve --platform android`
+- 核对本地与某次 EAS 构建是否同一 runtime：`eas fingerprint:compare --build-id <构建 ID>`
+  （输出 ✅ matches 才说明该 OTA 能送达这个包）
+- **例外：1.1.0（versionCode 11）** 构建于切换前，runtime 固定为字符串 `1.1.0`，默认的
+  `eas update` 不会再命中它。若必须给它发热修复，需临时把 `app.json` 的 `runtimeVersion`
+  改为 `"1.1.0"` 再发布，且该 OTA 的 JS 不得依赖 vc11 之后新增的原生能力；发布后改回。
 
 发布前先跑：
 
