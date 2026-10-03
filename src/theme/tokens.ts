@@ -28,6 +28,10 @@ export interface Palette {
   card: string;
   cardAlt: string; // subtle filled card / track background
   chipNeutral: string; // neutral pill background
+  // round icon buttons (header settings / tools / back)
+  buttonSurface: string;
+  buttonSurfacePressed: string;
+  buttonBorder: string;
   chipAccent: string; // brand-tinted pill background
   // text
   text: string; // primary
@@ -54,6 +58,10 @@ const dark: Palette = {
   card: '#151912',
   cardAlt: '#1C2118',
   chipNeutral: '#1C2118',
+  // 比 cardAlt 亮一档 + 细描边：近黑背景上一眼看出是可点按钮。
+  buttonSurface: '#232A1D',
+  buttonSurfacePressed: '#2E3626',
+  buttonBorder: 'rgba(255,255,255,0.14)',
   chipAccent: 'rgba(198,255,61,0.14)',
   text: '#EEF3E8',
   textStrong: '#FFFFFF',
@@ -76,6 +84,9 @@ const solar: Palette = {
   card: '#F3F5F0',
   cardAlt: '#E6EAE1',
   chipNeutral: '#FFFFFF',
+  buttonSurface: '#FFFFFF',
+  buttonSurfacePressed: '#E6EAE1',
+  buttonBorder: 'transparent',
   chipAccent: '#E6F5C8',
   text: '#000000',
   textStrong: '#000000',

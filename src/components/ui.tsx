@@ -116,20 +116,25 @@ export function RoundIconButton({
   const { c, isDark } = useTheme();
   return (
     <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={label}>
-      <View
-        style={[
-          styles.roundBtn,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            backgroundColor: isDark ? c.cardAlt : '#fff',
-            shadowOpacity: isDark ? 0 : 0.06,
-          },
-        ]}
-      >
-        {children}
-      </View>
+      {({ pressed }) => (
+        <View
+          style={[
+            styles.roundBtn,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor: pressed ? c.buttonSurfacePressed : c.buttonSurface,
+              borderWidth: 1,
+              borderColor: c.buttonBorder,
+              shadowOpacity: isDark ? 0 : 0.06,
+              transform: [{ scale: pressed ? 0.94 : 1 }],
+            },
+          ]}
+        >
+          {children}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -200,12 +205,12 @@ export function SettingsIcon() {
           y1={line.y1}
           x2={line.x2}
           y2={line.y2}
-          stroke={c.textFaint}
+          stroke={c.text}
           strokeWidth={2}
           strokeLinecap="round"
         />
       ))}
-      <Circle cx={11} cy={11} r={5} stroke={c.textFaint} strokeWidth={2} />
+      <Circle cx={11} cy={11} r={5} stroke={c.text} strokeWidth={2} />
     </Svg>
   );
 }
@@ -213,7 +218,8 @@ export function SettingsIcon() {
 // ── Stopwatch glyph (pre-run tools entry) ──────────────────────────────
 export function ToolsIcon({ color }: { color?: string }) {
   const { c } = useTheme();
-  const stroke = color ?? c.textFaint;
+  // 与返回键一致用主文字色；textFaint 在暗黑模式下对比度太低，不像可点按钮。
+  const stroke = color ?? c.text;
   return (
     <Svg width={20} height={20} viewBox="0 0 22 22" fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round">
       <Circle cx={11} cy={12.5} r={7} />
