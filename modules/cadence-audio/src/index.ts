@@ -1,4 +1,5 @@
-import type { EventSubscription } from 'expo-modules-core';
+// Only `.remove()` is used by callers; avoids a direct expo-modules-core dependency (expo-doctor).
+export type EventSubscription = { remove(): void };
 
 import Native from './CadenceAudioModule';
 import type { BeatEvent, CadenceSoundId, InterruptedEvent } from './CadenceAudio.types';

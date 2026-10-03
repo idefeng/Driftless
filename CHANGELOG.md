@@ -2,6 +2,8 @@
 
 ## 1.1.0 · 2026-10-03
 
+- 依赖补丁更新至 Expo SDK 56 推荐版本：`expo` 56.0.23、`expo-router` 56.2.21、`expo-updates` 56.0.28、`expo-splash-screen` 56.0.15、`expo-constants` / `expo-linking` / `@expo/metro-runtime`、`react-native-screens` 4.26.2；补齐 `@expo/dom-webview` 对等依赖。
+- expo-doctor 清理：移除 SDK 56 已默认的 `newArchEnabled`，不再直接依赖 `expo-modules-core`（本地模块改用自有 `EventSubscription` 类型）。剩余 1 项 Hermes V1 内存回退需升级 Expo SDK 57 / RN 0.86.2 解决。
 - 开启 R8：release 构建启用代码压缩与资源压缩（`expo-build-properties`），本地 release 包 35.7 MB、dex 由 18 个减至 3 个；已在 Fold7 真机回归播放、±1、滑动、通知栏 ±1、训练换段等路径，无缺类 / 反射崩溃。
 - 已弃用的 system-bar API（`Window.setStatusBarColor` / `setNavigationBarColor`）：自有代码无调用；R8 后依赖中的调用点由 16 处降到 8 处，剩余位于 React Native 核心、Material、AndroidX SplashScreen，均按系统版本守卫（仅 Android 14 及以下执行），需随依赖升级消除。
 - 大屏适配（折叠屏内屏 / 平板，短边 ≥ 600dp）：所有页面内容居中成最宽 640dp 的一列；首页在高度充足时放大步频数字与节拍脚印。
