@@ -1,0 +1,5 @@
+• Measured cadence: your phone's step sensor shows live whether you're keeping up with the beat
+• Run history: every run saved on your phone, with a 7-day summary and cadence chart
+• Share cards: turn a run into an image for friends
+• Plan templates: easy run, cadence builder, tempo, intervals, long run
+• Polish: clearer header buttons and an easier-to-spot settings icon

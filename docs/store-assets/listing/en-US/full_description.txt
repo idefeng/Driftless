@@ -10,6 +10,10 @@ Build workouts from warm-up, cruise and sprint phases, each with its own duratio
 • Gradual ramps: glide smoothly to the next phase's cadence over 10, 20 or 30 seconds.
 • Phase-change cue: a 3-second countdown before each phase ends, landing right on the beat.
 • Share plans with friends via QR code.
+• Five built-in templates — easy run, cadence builder, tempo, intervals and long run — ready in one tap and fully editable.
+
+MEASURED CADENCE: KNOW IF YOU KEPT UP
+Turn on Measured cadence and your phone's step sensor measures your real cadence while the beat plays, showing live how much of the time you're on the beat. Every run is saved automatically with time, average cadence, steps and a cadence chart, plus a 7-day summary — and you can turn any run into a share card for friends. Step data is processed and stored on your phone only, never uploaded.
 
 KEEP YOUR MUSIC PLAYING
 The beat layers on top of your music or podcast and never pauses other apps. Switch to exclusive mode when you want to focus. Beat volume is independent of media volume.

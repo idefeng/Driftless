@@ -1,0 +1,21 @@
+<en-US>
+• Measured cadence: your phone's step sensor shows live whether you're keeping up with the beat
+• Run history: every run saved on your phone, with a 7-day summary and cadence chart
+• Share cards: turn a run into an image for friends
+• Plan templates: easy run, cadence builder, tempo, intervals, long run
+• Polish: clearer header buttons and an easier-to-spot settings icon
+</en-US>
+<zh-CN>
+· 实测步频：开启后用手机计步器测量真实步频，实时显示是否跟上节拍（跟随率）
+· 训练记录：每次跑步自动保存在本机，查看近 7 天汇总与步频曲线
+· 分享卡片：一键生成训练卡片，分享给跑友
+· 计划模板：轻松跑、步频提升、节奏跑、间歇跑、长距离，一键套用
+· 细节优化：顶部按钮更清晰，设置图标更易识别
+</zh-CN>
+<zh-TW>
+· 實測步頻：開啟後用手機計步器測量真實步頻，即時顯示是否跟上節拍（跟隨率）
+· 訓練紀錄：每次跑步自動儲存在本機，查看近 7 天彙總與步頻曲線
+· 分享卡片：一鍵產生訓練卡片，分享給跑友
+· 計畫範本：輕鬆跑、步頻提升、節奏跑、間歇跑、長距離，一鍵套用
+· 細節最佳化：頂部按鈕更清晰，設定圖示更容易辨識
+</zh-TW>

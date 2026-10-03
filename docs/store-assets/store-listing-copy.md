@@ -1,10 +1,10 @@
-# Driftless 上架文案（1.1.0 · 品牌视觉 v2）
+# Driftless 上架文案（1.2.0 · 训练闭环）
 
 > 字数限制：Google Play 标题 ≤ 30、简短说明 ≤ 80、完整说明 ≤ 4000、版本说明 ≤ 500 字符。以下文案均已在限制内。
 >
 > **直接粘贴用的分字段文件在 `listing/` 下**（en-US / zh-CN / zh-TW 三种语言，fastlane `supply` 目录结构）：
-> `listing/<语言>/title.txt`、`short_description.txt`、`full_description.txt`、`changelogs/11.txt`（11 = versionCode）。
-> 多语言版本说明一次性粘贴块：`listing/release-notes-1.1.0.txt`。繁体中文（zh-TW）仅在 `listing/zh-TW/` 中提供。
+> `listing/<语言>/title.txt`、`short_description.txt`、`full_description.txt`、`changelogs/12.txt`（12 = versionCode，以 EAS 实际分配为准；`11.txt` 为 1.1.0 历史版本）。
+> 多语言版本说明一次性粘贴块：`listing/release-notes-1.2.0.txt`（1.1.0 见 `release-notes-1.1.0.txt`）。繁体中文（zh-TW）仅在 `listing/zh-TW/` 中提供。
 
 ## 中文商店信息
 
@@ -13,7 +13,7 @@
 副标题：一拍一步，跑出稳定步频
 
 简短说明（≤80）：
-跑步步频节拍器：一拍一步，零漂移音频时钟，支持间歇计划、渐进变速、边听音乐边跑。
+跑步步频节拍器：一拍一步，零漂移音频时钟，实测步频与跟随率，支持间歇计划、边听音乐边跑。
 
 详细介绍：
 Driftless 是一款为跑者打造的步频节拍器——一拍一步，帮你把步频稳稳钉住。
@@ -28,6 +28,10 @@ Driftless 是一款为跑者打造的步频节拍器——一拍一步，帮你�
 · 渐进过渡：换段前 10 / 20 / 30 秒平滑加减速到下一段步频，不再突然变奏。
 · 换段提示音：每段结束前 3 秒倒数，提示音对齐拍点，不打乱节奏。
 · 计划可通过二维码分享给跑友。
+· 内置轻松跑、步频提升、节奏跑、间歇跑、长距离 5 个模板，一键套用后可自由修改。
+
+【实测步频：跑完就知道跟没跟上】
+开启「实测步频」后，播放时用手机自带计步器测量你的真实步频，实时显示与目标步频的「跟随率」。每次跑步自动生成训练记录：时长、平均步频、步数和步频曲线，近 7 天汇总一目了然，还能一键生成分享卡片发给跑友。计步数据只在本机计算和保存，不会上传。
 
 【边听音乐边跑】
 节拍叠加在你正在听的音乐、播客之上，绝不打断、绝不暂停其他 App；需要专注时也可切换为独占模式。节拍音量独立于媒体音量调节。
@@ -46,12 +50,12 @@ Driftless 是一款为跑者打造的步频节拍器——一拍一步，帮你�
 关键词：
 跑步,步频,节拍器,跑步节拍器,步频训练,间歇跑,节奏跑,马拉松,跑步训练,运动健康
 
-更新说明（1.1.0）：
-· 全新品牌视觉：黑底 + 荧光运动绿，脚印 Logo
-· 首页一拍一步：左右脚印跟随节拍交替落地；跑步时可上下滑动调步频
-· 渐进过渡：换段前平滑变速到下一段步频
-· 重音拍：每 2 / 4 拍强拍提示，帮助感知左右脚节奏
-· 换段提示音：每段结束前 3 秒倒数
+更新说明（1.2.0）：
+· 实测步频：开启后用手机计步器测量真实步频，实时显示是否跟上节拍（跟随率）
+· 训练记录：每次跑步自动保存在本机，查看近 7 天汇总与步频曲线
+· 分享卡片：一键生成训练卡片，分享给跑友
+· 计划模板：轻松跑、步频提升、节奏跑、间歇跑、长距离，一键套用
+· 细节优化：顶部按钮更清晰，设置图标更易识别
 
 ## Google Play English Listing
 
@@ -59,7 +63,7 @@ Title (≤30):
 Driftless: Running Cadence
 
 Short description (≤80):
-One beat, one step. Zero-drift running cadence metronome with interval plans.
+Zero-drift running cadence metronome with intervals and measured cadence.
 
 Full description:
 Driftless is a cadence metronome built for runners — one beat, one step, locked in.
@@ -74,6 +78,10 @@ Build workouts from warm-up, cruise and sprint phases, each with its own duratio
 • Gradual ramps: glide smoothly to the next phase's cadence over 10, 20 or 30 seconds.
 • Phase-change cue: a 3-second countdown before each phase ends, landing right on the beat.
 • Share plans with friends via QR code.
+• Five built-in templates — easy run, cadence builder, tempo, intervals and long run — ready in one tap and fully editable.
+
+MEASURED CADENCE: KNOW IF YOU KEPT UP
+Turn on Measured cadence and your phone's step sensor measures your real cadence while the beat plays, showing live how much of the time you're on the beat. Every run is saved automatically with time, average cadence, steps and a cadence chart, plus a 7-day summary — and you can turn any run into a share card for friends. Step data is processed and stored on your phone only, never uploaded.
 
 KEEP YOUR MUSIC PLAYING
 The beat layers on top of your music or podcast and never pauses other apps. Switch to exclusive mode when you want to focus. Beat volume is independent of media volume.
@@ -89,12 +97,12 @@ High-contrast black and volt-green design, plus a white "Solar" mode for bright 
 
 Great for runners raising or steadying their cadence, tempo and interval sessions, marathon training, and anyone who'd rather listen than keep checking their watch.
 
-Release notes (1.1.0):
-• New look: black & volt green with a footprint logo
-• One beat, one step: footprints land in time with the beat; swipe to adjust cadence while running
-• Gradual ramp between workout phases
-• Accent beats every 2 or 4 steps
-• 3-second countdown cue before each phase change
+Release notes (1.2.0):
+• Measured cadence: your phone's step sensor shows live whether you're keeping up with the beat
+• Run history: every run saved on your phone, with a 7-day summary and cadence chart
+• Share cards: turn a run into an image for friends
+• Plan templates: easy run, cadence builder, tempo, intervals, long run
+• Polish: clearer header buttons and an easier-to-spot settings icon
 
 Suggested category:
 Health & Fitness

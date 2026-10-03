@@ -1,1 +1,1 @@
-One beat, one step. Zero-drift running cadence metronome with interval plans.
+Zero-drift running cadence metronome with intervals and measured cadence.

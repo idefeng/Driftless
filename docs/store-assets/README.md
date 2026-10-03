@@ -1,4 +1,4 @@
-# Driftless 上架素材包（1.1.0 · 品牌视觉 v2：黑底 + 荧光运动绿）
+# Driftless 上架素材包（1.2.0 · 训练闭环；品牌视觉 v2：黑底 + 荧光运动绿）
 
 ## 文件一览
 
@@ -10,8 +10,8 @@
 | 商店截图（中文） | `screenshots/store-1080x1920/zh/01…06-*.png` | 1080×1920（9:16），Google Play 与 vivo 等国内商店通用 |
 | 商店截图（英文） | `screenshots/store-1080x1920/en/01…06-*.png` | 同上 |
 | 原始真机截图 | `screenshots/raw/{zh,en}/*.png` | 1080×2520（Galaxy Z Fold7 外屏），仅归档 |
-| 商店文案（阅读版） | `store-listing-copy.md` | 中英文标题、简介、关键词、1.1.0 更新说明 |
-| 商店文案（粘贴版） | `listing/{en-US,zh-CN,zh-TW}/*.txt` | 按 Play Console 字段拆分；`listing/release-notes-1.1.0.txt` 为多语言版本说明粘贴块 |
+| 商店文案（阅读版） | `store-listing-copy.md` | 中英文标题、简介、关键词、1.2.0 更新说明 |
+| 商店文案（粘贴版） | `listing/{en-US,zh-CN,zh-TW}/*.txt` | 按 Play Console 字段拆分；`listing/release-notes-1.2.0.txt` 为多语言版本说明粘贴块（1.1.0 为 `release-notes-1.1.0.txt`） |
 | 隐私政策 | `privacy-policy.html` | — |
 
 ## 截图顺序与卖点
@@ -34,7 +34,8 @@
 
 ## 安装包
 
-- 当前版本：`1.1.0`（versionCode 11），EAS 构建 `fad73819-a444-465c-99b7-ebdd52343d8f`，AAB：<https://expo.dev/artifacts/eas/sGXfZpsI3ep_cz3ZbgQ_6VWMPl9iPW8ze89BD07SC2E.aab>，使用 2026-08 重置后的 Play 上传密钥签名（SHA-1 `B4:02:BB:…`）。
+- 下一版本：`1.2.0`（预计 versionCode 12，由 EAS 远程自增分配）——新增 cadence-steps 原生模块、react-native-view-shot、expo-sharing，必须重新 EAS 构建，不能 OTA；新增 `ACTIVITY_RECOGNITION` 权限，上架前须重新发布线上隐私政策。构建完成后在此补充构建 ID 与 AAB 链接。
+- 已提交审核版本：`1.1.0`（versionCode 11），EAS 构建 `fad73819-a444-465c-99b7-ebdd52343d8f`，AAB：<https://expo.dev/artifacts/eas/sGXfZpsI3ep_cz3ZbgQ_6VWMPl9iPW8ze89BD07SC2E.aab>，使用 2026-08 重置后的 Play 上传密钥签名（SHA-1 `B4:02:BB:…`）。
 - **不要上传 versionCode 10**（构建 `765fdfdf…`）：它早于大屏适配 / R8 / 依赖更新，且与 vc11 共用 OTA runtime `1.1.0`，分发出去会收到不兼容的 OTA。
 - EAS 尚未关联 Play Console 服务账号，AAB 需在 Play Console 手动上传。
 - 历史 1.0.x 安装包（橙色旧版视觉）不建议再上传。

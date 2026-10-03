@@ -6,7 +6,7 @@
 
 - 应用名：Driftless
 - Android 包名：`com.idefeng.driftless`
-- 当前版本：`1.1.0`（以 `app.json` 为准）
+- 当前版本：`1.2.0`（以 `app.json` 为准；1.1.0 vc11 为已提交审核版本）
 - EAS 项目：`@idefeng/driftless`
 - EAS Project ID：`af22973b-c89f-4d59-b406-a2ae922cdc64`
 - EAS Update URL：`https://u.expo.dev/af22973b-c89f-4d59-b406-a2ae922cdc64`

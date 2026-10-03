@@ -50,7 +50,7 @@ export default function Settings() {
     },
   ];
 
-  const appVersion = Constants.expoConfig?.version || '1.1.0';
+  const appVersion = Constants.expoConfig?.version || '1.2.0';
   const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : null;
   const channel = Updates.channel || 'production';
 
