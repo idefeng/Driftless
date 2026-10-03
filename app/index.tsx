@@ -97,6 +97,11 @@ export default function Home() {
 
   const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
   const cyclePlan = () => {
+    // 只有一个计划时「切换」没有任何效果，看起来像点不动：直接进计划列表（可新建 / 从模板新建）。
+    if (plans.length <= 1) {
+      router.push('/plan-list');
+      return;
+    }
     const i = plans.findIndex((p) => p.id === activePlanId);
     setActivePlanId(plans[(i + 1) % plans.length].id);
   };
@@ -174,6 +179,7 @@ export default function Home() {
               onPress={cycleSound}
               onLongPress={() => router.push('/sounds')}
               delayLongPress={300}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               accessibilityRole="button"
               accessibilityLabel={t('a11y.soundChip', { sound: getSoundShortName(t, sound) })}
             >
@@ -186,6 +192,7 @@ export default function Home() {
               onPress={toggleCoexist}
               onLongPress={() => router.push('/coexist')}
               delayLongPress={300}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               accessibilityRole="button"
               accessibilityLabel={t('a11y.coexistChip', {
                 mode: coexist === 'mix' ? t('home.coexistMix') : t('home.coexistExclusive'),
@@ -202,6 +209,7 @@ export default function Home() {
               onPress={cyclePlan}
               onLongPress={() => router.push('/plan')}
               delayLongPress={300}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
               accessibilityRole="button"
               accessibilityLabel={t('a11y.planChip', { name: activePlan.name })}
             >
