@@ -166,7 +166,7 @@ class CadenceLiveService : Service() {
       .setContentText(sub)
       .setOngoing(true)
       .setColorized(true)
-      .setColor(0xFFFF8C2B.toInt())
+      .setColor(0xFFC6FF3D.toInt()) // brand volt green
       .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       .setOnlyAlertOnce(true)

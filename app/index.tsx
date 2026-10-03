@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Screen } from '../src/components/Screen';
-import { BeatBars } from '../src/components/BeatBars';
+import { FootstepPulse } from '../src/components/FootstepPulse';
 import { PlayPauseButton } from '../src/components/PlayPauseButton';
 import { StepButton } from '../src/components/StepButton';
 import { Wordmark } from '../src/components/Logo';
@@ -140,13 +140,7 @@ export default function Home() {
         </Animated.Text>
 
         <Animated.View layout={LinearTransition.duration(280)} style={{ marginTop: isPlaying ? 30 : 18 }}>
-          <BeatBars
-            color={thermal.base}
-            centerColor={thermal.glow}
-            height={52}
-            running={isPlaying}
-            showHalo
-          />
+          <FootstepPulse color={thermal.base} glowColor={thermal.glow} size={50} running={isPlaying} />
         </Animated.View>
 
         {isPlaying ? (

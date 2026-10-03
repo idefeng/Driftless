@@ -42,10 +42,10 @@ export default function Language() {
                   styles.card,
                   {
                     backgroundColor: c.card,
-                    borderColor: selected ? brand.base : 'transparent',
+                    borderColor: selected ? c.brand : 'transparent',
                     borderWidth: 2,
                     shadowOpacity: selected ? 0.14 : isDark ? 0 : 0.05,
-                    shadowColor: selected ? brand.deep : '#000',
+                    shadowColor: selected ? c.brandShadow : '#000',
                   },
                 ]}
               >
@@ -56,7 +56,7 @@ export default function Language() {
                   </Text>
                 </View>
                 {selected && (
-                  <View style={[styles.knob, { backgroundColor: brand.base }]}>
+                  <View style={[styles.knob, { backgroundColor: c.brand }]}>
                     <CheckIcon />
                   </View>
                 )}

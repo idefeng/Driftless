@@ -29,9 +29,8 @@ export default function Settings() {
       : t(languagePreference === 'zh' ? 'language.zh' : 'language.en');
 
   const visualModes: { mode: VisualMode; labelZh: string; labelEn: string; descZh: string; descEn: string }[] = [
-    { mode: 'standard', labelZh: '标准', labelEn: 'Standard', descZh: '跟随系统明暗', descEn: 'System theme' },
-    { mode: 'solar', labelZh: '日光强光', labelEn: 'Solar', descZh: '户外高对比', descEn: 'Sun glare focus' },
-    { mode: 'midnight', labelZh: '夜跑红光', labelEn: 'Midnight', descZh: '护眼深红光', descEn: 'Night vision' },
+    { mode: 'standard', labelZh: '暗黑运动', labelEn: 'Dark', descZh: '黑底荧光绿', descEn: 'Black & volt' },
+    { mode: 'solar', labelZh: '日光强光', labelEn: 'Solar', descZh: '户外白底高对比', descEn: 'Sun glare focus' },
   ];
 
   const handleCheckOta = async () => {

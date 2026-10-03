@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import Svg, { Path, Line, Circle } from 'react-native-svg';
-import { fonts, brand, systemGreen } from '../theme/tokens';
+import { fonts, brand } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
 
 // ── Chip (rounded pill) ────────────────────────────────────────────────
@@ -53,10 +53,10 @@ export function Toggle({
       <View
         style={[
           styles.track,
-          { backgroundColor: value ? systemGreen : c.scheme === 'dark' ? '#3A3328' : '#E2DDD5' },
+          { backgroundColor: value ? c.brand : c.trackInactive },
         ]}
       >
-        <View style={[styles.knob, value ? { right: 2 } : { left: 2 }]} />
+        <View style={[styles.knob, value ? { right: 2, backgroundColor: c.onBrand } : { left: 2 }]} />
       </View>
     </Pressable>
   );
@@ -224,7 +224,7 @@ export function ToolsIcon({ color }: { color?: string }) {
   );
 }
 
-export function CheckIcon({ color = '#fff', size = 17 }: { color?: string; size?: number }) {
+export function CheckIcon({ color = brand.ink, size = 17 }: { color?: string; size?: number }) {
   return (
     <Svg width={size} height={(size * 13) / 17} viewBox="0 0 17 13" fill="none">
       <Path d="M2 6.5L6.5 11 15 2" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />

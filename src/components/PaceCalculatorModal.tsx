@@ -83,7 +83,7 @@ export function PaceCalculatorModal({ visible, onClose }: PaceCalculatorModalPro
           </View>
 
           <Pressable style={[styles.button, { backgroundColor: c.brand }]} onPress={onClose}>
-            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
+            <Text style={[styles.buttonText, { color: c.onBrand }]}>
               {language === 'zh' ? '完成' : 'Done'}
             </Text>
           </Pressable>

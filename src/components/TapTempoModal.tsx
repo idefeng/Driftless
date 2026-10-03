@@ -108,7 +108,7 @@ export function TapTempoModal({ visible, onClose }: TapTempoModalProps) {
               disabled={!detectedBpm}
               onPress={handleApply}
             >
-              <Text style={[styles.buttonText, { color: detectedBpm ? '#FFFFFF' : c.textFaint }]}>
+              <Text style={[styles.buttonText, { color: detectedBpm ? c.onBrand : c.textFaint }]}>
                 {language === 'zh' ? '应用步频' : 'Apply Cadence'}
               </Text>
             </Pressable>

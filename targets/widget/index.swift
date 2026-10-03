@@ -3,49 +3,75 @@ import WidgetKit
 import ActivityKit
 import AppIntents
 
-// MARK: - Brand colors (single orange ramp + warm neutrals)
+// MARK: - Brand colors (v2: volt green + near-black neutrals)
 
 private extension Color {
-  static let brandBase = Color(red: 1.0, green: 0.549, blue: 0.169) // #FF8C2B
-  static let brandDeep = Color(red: 0.957, green: 0.447, blue: 0.086) // #F47216
-  static let brandGlow = Color(red: 1.0, green: 0.604, blue: 0.271) // #FF9A45
-  static let brandLight = Color(red: 1.0, green: 0.690, blue: 0.400) // #FFB066
-  static let warmInk = Color(red: 1.0, green: 0.965, blue: 0.925) // #FFF6EC
-  static let warmMuted = Color(red: 0.612, green: 0.576, blue: 0.518) // #9C9384
-  static let cardBg = Color(red: 0.149, green: 0.125, blue: 0.086) // #26201B
+  static let brandBase = Color(red: 0.776, green: 1.0, blue: 0.239) // #C6FF3D
+  static let brandDeep = Color(red: 0.561, green: 0.831, blue: 0.0) // #8FD400
+  static let brandGlow = Color(red: 0.831, green: 1.0, blue: 0.416) // #D4FF6A
+  static let brandLight = Color(red: 0.890, green: 1.0, blue: 0.620) // #E3FF9E
+  static let ink = Color(red: 0.043, green: 0.051, blue: 0.039) // #0B0D0A — content on brand fills
+  static let warmInk = Color.white // primary text on dark
+  static let warmMuted = Color(red: 0.604, green: 0.639, blue: 0.569) // #9AA391
+  static let cardBg = Color(red: 0.082, green: 0.098, blue: 0.071) // #151912
+}
+
+// MARK: - Footprint (same geometry as src/components/Footprint.tsx, 40×64 box, right foot)
+
+private struct FootShape: Shape {
+  var mirrored = false
+  func path(in rect: CGRect) -> Path {
+    let sx = rect.width / 40, sy = rect.height / 64
+    func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+      CGPoint(x: rect.minX + (mirrored ? 40 - x : x) * sx, y: rect.minY + y * sy)
+    }
+    var p = Path()
+    p.move(to: pt(18, 15))
+    p.addCurve(to: pt(33.5, 27), control1: pt(27, 14), control2: pt(33, 19))
+    p.addCurve(to: pt(29.5, 46), control1: pt(34, 34), control2: pt(31, 40))
+    p.addCurve(to: pt(24.5, 62), control1: pt(28, 52), control2: pt(29, 58))
+    p.addCurve(to: pt(12, 57.5), control1: pt(20, 65.5), control2: pt(13, 64))
+    p.addCurve(to: pt(14, 41), control1: pt(11.2, 52), control2: pt(14.5, 47))
+    p.addCurve(to: pt(8.5, 26), control1: pt(13.6, 36), control2: pt(8.5, 33))
+    p.addCurve(to: pt(18, 15), control1: pt(8.5, 19), control2: pt(12, 15.3))
+    p.closeSubpath()
+    for (cx, cy, r) in [(12.6, 8.4, 4.4), (20.6, 5.8, 3.1), (26.7, 7.6, 2.7), (31.5, 11.4, 2.3)] as [(CGFloat, CGFloat, CGFloat)] {
+      let c = pt(cx, cy)
+      p.addEllipse(in: CGRect(x: c.x - r * sx, y: c.y - r * sy, width: 2 * r * sx, height: 2 * r * sy))
+    }
+    return p
+  }
+}
+
+/// Logo mark: dim trailing left foot low-left, bright leading right foot high-right.
+private struct FootprintPair: View {
+  var size: CGFloat
+  var body: some View {
+    let u = size / 100
+    ZStack(alignment: .topLeading) {
+      FootShape(mirrored: true)
+        .fill(Color.brandBase.opacity(0.45))
+        .frame(width: 40 * u, height: 64 * u)
+        .rotationEffect(.degrees(-9))
+        .offset(x: 13 * u, y: 28 * u)
+      FootShape()
+        .fill(Color.brandBase)
+        .frame(width: 40 * u, height: 64 * u)
+        .rotationEffect(.degrees(9))
+        .offset(x: 47 * u, y: 6 * u)
+    }
+    .frame(width: size, height: size, alignment: .topLeading)
+  }
 }
 
 // MARK: - Shared bits
 
-private struct BeatBars: View {
-  var color: Color = .brandGlow
-  var accent: Color = .brandLight
-  var heights: [CGFloat] = [12, 22, 30, 22, 12]
-  var width: CGFloat = 5
-  var body: some View {
-    HStack(alignment: .center, spacing: 5) {
-      ForEach(Array(heights.enumerated()), id: \.offset) { idx, h in
-        RoundedRectangle(cornerRadius: width / 2)
-          .fill(idx == heights.count / 2 ? accent : color)
-          .frame(width: width, height: h)
-      }
-    }
-  }
-}
-
 private struct LogoChip: View {
   var body: some View {
     RoundedRectangle(cornerRadius: 7)
-      .fill(LinearGradient(colors: [.brandGlow, .brandDeep], startPoint: .topLeading, endPoint: .bottomTrailing))
+      .fill(Color.ink)
       .frame(width: 26, height: 26)
-      .overlay(
-        HStack(alignment: .bottom, spacing: 2) {
-          RoundedRectangle(cornerRadius: 1).fill(.white).frame(width: 2.5, height: 7)
-          RoundedRectangle(cornerRadius: 1).fill(.white).frame(width: 2.5, height: 11)
-          RoundedRectangle(cornerRadius: 1).fill(.white).frame(width: 2.5, height: 5)
-        }
-        .padding(.bottom, 6)
-      )
+      .overlay(FootprintPair(size: 22))
   }
 }
 
@@ -82,7 +108,7 @@ private struct ControlLabel: View {
   var body: some View {
     Text(text)
       .font(.system(size: 17, weight: .semibold, design: .rounded))
-      .foregroundStyle(.white)
+      .foregroundStyle(filled ? Color.ink : .white)
       .frame(maxWidth: filled ? 56 : .infinity)
       .frame(height: 44)
       .background(
@@ -137,7 +163,7 @@ private struct LockScreenView: View {
           Text("SPM").font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.warmMuted)
         }
         Spacer()
-        BeatBars()
+        FootprintPair(size: 44)
       }
 
       CadenceControls()
@@ -169,13 +195,13 @@ struct DriftlessLiveActivity: Widget {
           }
         }
         DynamicIslandExpandedRegion(.center) {
-          BeatBars(heights: [8, 16, 22, 16, 8], width: 4)
+          FootprintPair(size: 30)
         }
         DynamicIslandExpandedRegion(.bottom) {
           CadenceControls()
         }
       } compactLeading: {
-        BeatBars(heights: [7, 12, 16], width: 3)
+        FootprintPair(size: 20)
       } compactTrailing: {
         Text("\(context.state.bpm)")
           .font(.system(size: 13, weight: .bold, design: .rounded))

@@ -129,7 +129,7 @@ export default function Plan() {
                 return (
                   <View style={styles.connector}>
                     <View style={[styles.connectorLine, { backgroundColor: c.trackInactive }]} />
-                    <View style={[styles.connectorPill, { backgroundColor: isDark ? 'rgba(255,140,43,0.18)' : '#FFEAD6' }]}>
+                    <View style={[styles.connectorPill, { backgroundColor: c.chipAccent }]}>
                       <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: c.brandText }}>
                         {label}
                       </Text>
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 15,
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
-    borderLeftColor: '#fff',
+    borderLeftColor: brand.ink,
   },
-  startText: { fontFamily: fonts.displayBold, fontSize: 18, color: '#fff' },
+  startText: { fontFamily: fonts.displayBold, fontSize: 18, color: brand.ink },
 });

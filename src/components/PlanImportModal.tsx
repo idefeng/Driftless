@@ -88,7 +88,7 @@ export function PlanImportModal({ visible, onClose }: PlanImportModalProps) {
               <Text style={[styles.buttonText, { color: c.text }]}>{t('common.cancel')}</Text>
             </Pressable>
             <Pressable style={[styles.button, { backgroundColor: c.brand }]} onPress={handleImport}>
-              <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
+              <Text style={[styles.buttonText, { color: c.onBrand }]}>
                 {t('language.title') === '语言' ? '确定导入' : 'Import'}
               </Text>
             </Pressable>

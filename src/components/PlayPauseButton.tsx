@@ -78,14 +78,14 @@ export function PlayPauseButton({ playing, onPress, size = 88 }: PlayPauseButton
               height: size,
               borderRadius: size / 2,
               shadowColor: brand.deep,
-              shadowOpacity: c.scheme === 'dark' ? 0.55 : 0.4,
+              shadowOpacity: c.scheme === 'dark' ? 0.45 : 0.35,
             },
           ]}
         >
           {playing ? (
             <View style={{ flexDirection: 'row', gap: size * 0.08 }}>
-              <View style={{ width: barW, height: barH, borderRadius: barW / 2, backgroundColor: '#fff' }} />
-              <View style={{ width: barW, height: barH, borderRadius: barW / 2, backgroundColor: '#fff' }} />
+              <View style={{ width: barW, height: barH, borderRadius: barW / 2, backgroundColor: brand.ink }} />
+              <View style={{ width: barW, height: barH, borderRadius: barW / 2, backgroundColor: brand.ink }} />
             </View>
           ) : (
             <View
@@ -98,7 +98,7 @@ export function PlayPauseButton({ playing, onPress, size = 88 }: PlayPauseButton
                 borderLeftWidth: barH * 0.9,
                 borderTopColor: 'transparent',
                 borderBottomColor: 'transparent',
-                borderLeftColor: '#fff',
+                borderLeftColor: brand.ink,
               }}
             />
           )}

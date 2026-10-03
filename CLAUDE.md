@@ -63,11 +63,11 @@ One file per screen, flat (no nested route groups): `index` (main metronome), `s
 
 ### Theme (`src/theme/`)
 
-`tokens.ts` defines the full design-token palette (light/dark) and is the single source of truth for brand color — **one accent only, sunny orange `#FF8C2B`** (`brand.base`), no second high-saturation accent color, per PRD brand rules. Dark mode uses warm charcoal, deliberately never pure black. `ThemeContext` exposes `useTheme()` → `{ c: Palette, isDark }`; components read colors from `c`, never hardcode hex values for anything that should adapt to scheme.
+`tokens.ts` defines the full design-token palette and is the single source of truth for brand color — **one accent only, volt green `#C6FF3D`** (`brand.base`), no second high-saturation accent color, per PRD §1.5 (v2.0). The default `standard` mode is always dark (near-black `#0B0D0A`, does not follow the system scheme); `solar` is the white high-contrast outdoor mode (brand text switches to deep green there). Text/icons drawn on a volt fill use `c.onBrand` (near-black), never white. `ThemeContext` exposes `useTheme()` → `{ c: Palette, isDark, visualMode }`; components read colors from `c`, never hardcode hex values for anything that should adapt to scheme. The logo / beat visual is a footprint pair — geometry lives once in `src/components/Footprint.tsx` (mirrored in `targets/widget/index.swift` and `assets/driftless-logo.svg`).
 
 ### Components (`src/components/`)
 
-Shared primitives used across screens: `BeatBars` (waveform/pulse visualization), `PlayPauseButton`, `StepButton`/`MiniStepper` (±BPM controls sized for blind/sweaty-finger operation per PRD pain point 3), `Screen` (layout wrapper), `ui.tsx` (chips, icons, misc small pieces), `Logo`.
+Shared primitives used across screens: `FootstepPulse` (alternating-footprint beat visualization), `Footprint` (brand footprint geometry), `PlayPauseButton`, `StepButton`/`MiniStepper` (±BPM controls sized for blind/sweaty-finger operation per PRD pain point 3), `Screen` (layout wrapper), `ui.tsx` (chips, icons, misc small pieces), `Logo`.
 
 ## Conventions worth knowing before editing
 

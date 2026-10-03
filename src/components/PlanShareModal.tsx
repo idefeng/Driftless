@@ -51,11 +51,11 @@ export function PlanShareModal({ plan, visible, onClose }: PlanShareModalProps) 
           </Text>
 
           <View style={styles.qrContainer}>
-            <PlanQRCode value={payload} size={210} color={isDark ? '#FFFFFF' : '#141109'} backgroundColor={isDark ? '#1D190F' : '#FFFFFF'} />
+            <PlanQRCode value={payload} size={210} color={isDark ? '#FFFFFF' : '#0B0D0A'} backgroundColor={c.card} />
           </View>
 
           <Pressable style={[styles.button, { backgroundColor: c.brand }]} onPress={handleCopy}>
-            <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
+            <Text style={[styles.buttonText, { color: c.onBrand }]}>
               {copied
                 ? t('language.title') === '语言' ? '✓ 已准备好数据' : '✓ Ready'
                 : t('language.title') === '语言' ? '复制 JSON 文本' : 'Copy JSON'}

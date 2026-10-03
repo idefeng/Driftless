@@ -57,7 +57,7 @@ function HoldButton({ sign, caption, onStep }: { sign: '+' | '−'; caption: str
       style={({ pressed }) => [
         styles.btn,
         {
-          backgroundColor: isDark ? 'rgba(255,154,69,0.14)' : '#FFEAD6',
+          backgroundColor: c.chipAccent,
           opacity: pressed ? 0.6 : 1,
         },
       ]}

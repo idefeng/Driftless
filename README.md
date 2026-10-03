@@ -2,7 +2,7 @@
 
 零漂移步频节拍器 · 高精度跑步步频辅助工具（Run Cadence Metronome）。
 
-Local-First 移动 App，主色 **阳光橙 `#FF8C2B`**。本仓库当前实现了依据
+Local-First 移动 App，主色 **荧光运动绿 `#C6FF3D`**（黑底为主）。本仓库当前实现了依据
 [`docs/Driftless_PRD_v1.6.md`](docs/Driftless_PRD_v1.6.md) 与 Cloud Design 原型
 （`Driftless.dc.html`）的**完整 App UI**，iOS / Android 双平台、明暗两套主题。
 
@@ -42,7 +42,7 @@ src/
   state/CadenceContext   全局状态：BPM、播放、音效、共存、训练会话
   audio/CadenceScheduler 纯 JS 前瞻调度器 — 仅作 Expo Go 下的可视化兜底
   updates/               OTA 检查、下载、重启提示与单元测试
-  components/            BeatBars / PlayPauseButton / StepButton / Logo / ...
+  components/            FootstepPulse / Footprint / PlayPauseButton / StepButton / Logo / ...
 modules/cadence-audio/   本地原生模块：高精度音频引擎（见下）
   ios/CadenceAudioModule.swift     AVAudioEngine 实现
   android/.../CadenceAudioModule.kt AudioTrack 实现

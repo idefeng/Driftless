@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Screen } from '../src/components/Screen';
-import { BeatBars } from '../src/components/BeatBars';
+import { FootstepPulse } from '../src/components/FootstepPulse';
 import { PlayPauseButton } from '../src/components/PlayPauseButton';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts } from '../src/theme/tokens';
@@ -124,15 +124,7 @@ export default function Running() {
         </View>
 
         <View style={{ marginTop: 4 }}>
-          <BeatBars
-            color={thermal.base}
-            centerColor={thermal.glow}
-            barWidth={6}
-            height={44}
-            gap={10}
-            running={isPlaying}
-            showHalo
-          />
+          <FootstepPulse color={thermal.base} glowColor={thermal.glow} size={44} running={isPlaying} />
         </View>
 
         {/* segment remaining + progress */}

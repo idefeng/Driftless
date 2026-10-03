@@ -76,7 +76,7 @@ export function StepButton({
           flex,
           height: resolvedHeight,
           backgroundColor: c.card,
-          borderColor: isDark ? 'rgba(255,154,69,0.28)' : 'rgba(244,114,22,0.18)',
+          borderColor: isDark ? 'rgba(198,255,61,0.22)' : 'rgba(94,158,0,0.28)',
           opacity: isDown ? 0.92 : 1,
           transform: [{ scale: isDown ? 0.985 : 1 }],
           shadowOpacity: isDark ? 0 : 0.06,
@@ -88,7 +88,7 @@ export function StepButton({
           fontFamily: fonts.displaySemiBold,
           fontSize: glyphSize,
           lineHeight: glyphSize * 0.86,
-          color: isDark ? brand.glow : brand.deep,
+          color: c.brandText,
           marginTop: -8,
         }}
       >

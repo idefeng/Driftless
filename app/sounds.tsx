@@ -42,17 +42,17 @@ export default function Sounds() {
                   styles.card,
                   {
                     backgroundColor: c.card,
-                    borderColor: selected ? brand.base : 'transparent',
+                    borderColor: selected ? c.brand : 'transparent',
                     borderWidth: 2,
                     shadowOpacity: selected ? 0.16 : isDark ? 0 : 0.05,
-                    shadowColor: selected ? brand.deep : '#000',
+                    shadowColor: selected ? c.brandShadow : '#000',
                   },
                 ]}
               >
                 <View
                   style={[
                     styles.avatar,
-                    { backgroundColor: selected ? (isDark ? 'rgba(255,140,43,0.18)' : '#FFEAD6') : c.cardAlt },
+                    { backgroundColor: selected ? c.chipAccent : c.cardAlt },
                   ]}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3 }}>
@@ -63,7 +63,7 @@ export default function Sounds() {
                           width: 3.5,
                           height: h,
                           borderRadius: 2,
-                          backgroundColor: selected ? (isDark ? brand.glow : brand.deep) : c.textFaint,
+                          backgroundColor: selected ? c.brandText : c.textFaint,
                         }}
                       />
                     ))}
@@ -80,7 +80,7 @@ export default function Sounds() {
                 <View
                   style={[
                     styles.knob,
-                    { backgroundColor: selected ? brand.base : c.cardAlt },
+                    { backgroundColor: selected ? c.brand : c.cardAlt },
                   ]}
                 >
                   {selected ? (
@@ -109,7 +109,7 @@ export default function Sounds() {
         </View>
 
         <View style={[styles.note, { backgroundColor: c.cardAlt }]}>
-          <View style={{ marginTop: 5 }}>{dot(brand.base)}</View>
+          <View style={{ marginTop: 5 }}>{dot(c.brand)}</View>
           <Text style={[styles.noteText, { color: c.textMuted }]}>
             {t('sound.note.beforeBold')}
             <Text style={{ color: c.text, fontFamily: fonts.bodyBold }}>{t('sound.note.bold')}</Text>
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 11,
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
-    borderLeftColor: '#8C8275',
+    borderLeftColor: '#7A8270',
   },
   accentCard: {
     padding: 16,

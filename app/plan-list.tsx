@@ -77,10 +77,10 @@ export default function PlanList() {
                   styles.card,
                   {
                     backgroundColor: c.card,
-                    borderColor: selected ? brand.base : 'transparent',
+                    borderColor: selected ? c.brand : 'transparent',
                     borderWidth: 2,
                     shadowOpacity: selected ? 0.14 : isDark ? 0 : 0.05,
-                    shadowColor: selected ? brand.deep : '#000',
+                    shadowColor: selected ? c.brandShadow : '#000',
                   },
                 ]}
               >
@@ -102,11 +102,11 @@ export default function PlanList() {
                   }}
                   hitSlop={8}
                 >
-                  <Text style={styles.shareIcon}>QR</Text>
+                  <Text style={[styles.shareIcon, { color: c.brandText }]}>QR</Text>
                 </Pressable>
 
                 {selected && (
-                  <View style={[styles.knob, { backgroundColor: brand.base }]}>
+                  <View style={[styles.knob, { backgroundColor: c.brand }]}>
                     <CheckIcon />
                   </View>
                 )}
@@ -186,7 +186,6 @@ const styles = StyleSheet.create({
   shareIcon: {
     fontFamily: fonts.bodyBold,
     fontSize: 11,
-    color: '#FF8C2B',
   },
   knob: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   addPlan: {

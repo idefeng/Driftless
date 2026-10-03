@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { brand, fonts } from '../theme/tokens';
+import { fonts } from '../theme/tokens';
+import { FootprintPair } from './Footprint';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/I18nContext';
 
 /**
- * Logo — four equidistant rounded bars with rhythmic height variation
- * (形「准」，神「动」): precise alignment, lively rhythm. Plus optional wordmark.
+ * Logo — 两只交错的脚印（一步正在迈出）：后脚淡、前脚亮，一眼即知是跑步应用。
+ * 几何见 Footprint.tsx，与 App 图标共用。Plus optional wordmark.
  */
 
 interface LogoMarkProps {
@@ -14,29 +15,9 @@ interface LogoMarkProps {
 }
 
 export function LogoMark({ size = 18 }: LogoMarkProps) {
-  const { isDark } = useTheme();
-  const unit = size / 18;
-  const bars = [
-    { h: 9 * unit, c: brand.light },
-    { h: 15 * unit, c: isDark ? brand.glow : brand.base },
-    { h: 18 * unit, c: isDark ? brand.base : brand.deep },
-    { h: 12 * unit, c: isDark ? brand.glow : brand.base },
-  ];
-  return (
-    <View style={[styles.markRow, { height: size, gap: Math.max(2, 3 * unit) }]}>
-      {bars.map((b, i) => (
-        <View
-          key={i}
-          style={{
-            width: Math.max(3, 4 * unit),
-            height: b.h,
-            borderRadius: 2 * unit,
-            backgroundColor: b.c,
-          }}
-        />
-      ))}
-    </View>
-  );
+  const { c, isDark } = useTheme();
+  // 白底（日光模式）下荧光绿对比不足，改用深绿。
+  return <FootprintPair size={size} lead={isDark ? c.brand : c.brandText} />;
 }
 
 interface WordmarkProps {
@@ -49,7 +30,7 @@ export function Wordmark({ size = 17, showTagline = false }: WordmarkProps) {
   const { t } = useI18n();
   return (
     <View style={styles.brandRow}>
-      <LogoMark size={size * 1.06} />
+      <LogoMark size={size * 1.35} />
       <View>
         <Text
           style={{
@@ -80,13 +61,9 @@ export function Wordmark({ size = 17, showTagline = false }: WordmarkProps) {
 }
 
 const styles = StyleSheet.create({
-  markRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: 7,
   },
 });

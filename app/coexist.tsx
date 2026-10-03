@@ -90,7 +90,7 @@ export default function Coexist() {
             <Text style={[styles.vizLabel, { color: c.brandText, fontFamily: fonts.bodyBold }]}>Driftless</Text>
             <View style={[styles.vizBars, { justifyContent: 'space-between' }]}>
               {Array.from({ length: 6 }).map((_, i) => (
-                <View key={i} style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: brand.base }} />
+                <View key={i} style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.brand }} />
               ))}
             </View>
           </View>
@@ -131,7 +131,7 @@ export default function Coexist() {
                 accessibilityValue={{ min: 0, max: 100, now: volPct, text: `${volPct}%` }}
               >
                 <View style={[styles.sliderBg, { backgroundColor: c.trackInactive }]} pointerEvents="none">
-                  <View style={[styles.sliderFill, { width: `${volPct}%`, backgroundColor: brand.base }]} />
+                  <View style={[styles.sliderFill, { width: `${volPct}%`, backgroundColor: c.brand }]} />
                   <View style={[styles.sliderKnob, { left: `${volPct}%` }]} />
                 </View>
               </Pressable>
