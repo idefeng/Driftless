@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["CadenceStepsModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.cadencesteps.CadenceStepsModule"]
+  }
+}

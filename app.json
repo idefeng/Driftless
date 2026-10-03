@@ -18,7 +18,8 @@
         "UIBackgroundModes": [
           "audio"
         ],
-        "NSSupportsLiveActivities": true
+        "NSSupportsLiveActivities": true,
+        "NSMotionUsageDescription": "Driftless 在本机用计步数据计算实测步频，数据不会离开设备。Driftless uses step data on this device to measure your cadence; it never leaves the device."
       }
     },
     "android": {
