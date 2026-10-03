@@ -161,7 +161,7 @@ class CadenceLiveService : Service() {
     val sub = if (isWorkout && phaseProgressText.isNotEmpty()) "$bpm SPM · $phaseProgressText" else "$bpm SPM"
 
     val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-      .setSmallIcon(android.R.drawable.ic_media_play)
+      .setSmallIcon(R.drawable.driftless_ic_stat_footprints)
       .setContentTitle(title)
       .setContentText(sub)
       .setOngoing(true)

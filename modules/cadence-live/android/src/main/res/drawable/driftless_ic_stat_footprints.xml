@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for the live workout notification: the Driftless footprint pair
+     (same geometry as src/components/Footprint.tsx). Small icons must be a white
+     silhouette; Android tints them, so both feet are fully opaque for legibility. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="92"
+    android:viewportHeight="92">
+  <!-- crop the 100x100 logo box to the marks (x 11..89 → centered in 92) -->
+  <group android:translateX="-4" android:translateY="-4">
+    <!-- trailing left foot: translate(13 28) rotate(-9 20 32) mirror -->
+    <group android:translateX="13" android:translateY="28">
+      <group android:rotation="-9" android:pivotX="20" android:pivotY="32">
+        <group android:scaleX="-1" android:translateX="40">
+          <path android:fillColor="#FFFFFFFF" android:pathData="M18,15 C27,14 33,19 33.5,27 C34,34 31,40 29.5,46 C28,52 29,58 24.5,62 C20,65.5 13,64 12,57.5 C11.2,52 14.5,47 14,41 C13.6,36 8.5,33 8.5,26 C8.5,19 12,15.3 18,15 Z M8.20,8.4 a4.4,4.4 0 1,0 8.80,0 a4.4,4.4 0 1,0 -8.80,0 Z M17.50,5.8 a3.1,3.1 0 1,0 6.20,0 a3.1,3.1 0 1,0 -6.20,0 Z M24.00,7.6 a2.7,2.7 0 1,0 5.40,0 a2.7,2.7 0 1,0 -5.40,0 Z M29.20,11.4 a2.3,2.3 0 1,0 4.60,0 a2.3,2.3 0 1,0 -4.60,0 Z" />
+        </group>
+      </group>
+    </group>
+    <!-- leading right foot: translate(47 6) rotate(9 20 32) -->
+    <group android:translateX="47" android:translateY="6">
+      <group android:rotation="9" android:pivotX="20" android:pivotY="32">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M18,15 C27,14 33,19 33.5,27 C34,34 31,40 29.5,46 C28,52 29,58 24.5,62 C20,65.5 13,64 12,57.5 C11.2,52 14.5,47 14,41 C13.6,36 8.5,33 8.5,26 C8.5,19 12,15.3 18,15 Z M8.20,8.4 a4.4,4.4 0 1,0 8.80,0 a4.4,4.4 0 1,0 -8.80,0 Z M17.50,5.8 a3.1,3.1 0 1,0 6.20,0 a3.1,3.1 0 1,0 -6.20,0 Z M24.00,7.6 a2.7,2.7 0 1,0 5.40,0 a2.7,2.7 0 1,0 -5.40,0 Z M29.20,11.4 a2.3,2.3 0 1,0 4.60,0 a2.3,2.3 0 1,0 -4.60,0 Z" />
+      </group>
+    </group>
+  </group>
+</vector>
