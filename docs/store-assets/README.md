@@ -34,6 +34,7 @@
 
 ## 安装包
 
-- 当前版本：`1.1.0`（versionCode 10），EAS 构建 `765fdfdf-4ef7-4ecb-9d51-c11cdfec8f27`，使用 2026-08 重置后的 Play 上传密钥签名。
+- 当前版本：`1.1.0`（versionCode 11），EAS 构建 `fad73819-a444-465c-99b7-ebdd52343d8f`，AAB：<https://expo.dev/artifacts/eas/sGXfZpsI3ep_cz3ZbgQ_6VWMPl9iPW8ze89BD07SC2E.aab>，使用 2026-08 重置后的 Play 上传密钥签名（SHA-1 `B4:02:BB:…`）。
+- **不要上传 versionCode 10**（构建 `765fdfdf…`）：它早于大屏适配 / R8 / 依赖更新，且与 vc11 共用 OTA runtime `1.1.0`，分发出去会收到不兼容的 OTA。
 - EAS 尚未关联 Play Console 服务账号，AAB 需在 Play Console 手动上传。
 - 历史 1.0.x 安装包（橙色旧版视觉）不建议再上传。
