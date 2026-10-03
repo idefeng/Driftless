@@ -182,35 +182,34 @@ export function ChevronRightIcon() {
   );
 }
 
-const GEAR_TEETH = Array.from({ length: 8 }, (_, i) => {
-  const angle = (i * Math.PI * 2) / 8;
-  const rInner = 7;
-  const rOuter = 10;
-  return {
-    x1: 11 + Math.cos(angle) * rInner,
-    y1: 11 + Math.sin(angle) * rInner,
-    x2: 11 + Math.cos(angle) * rOuter,
-    y2: 11 + Math.sin(angle) * rOuter,
-  };
-});
+// 齿轮外轮廓：8 个梯形齿（齿顶窄、齿根宽），齿间用齿根圆弧连接，一笔闭合。
+// 旧版是放射短线 + 圆，看起来像太阳（容易误认成「日光模式」开关）。
+const GEAR_PATH = (() => {
+  const cx = 12;
+  const cy = 12;
+  const rOut = 10;
+  const rIn = 7.4;
+  const teeth = 8;
+  const step = (Math.PI * 2) / teeth;
+  const tipHalf = step * 0.17; // 齿顶半宽（弧度）
+  const rootHalf = step * 0.27; // 齿根半宽
+  const pt = (r: number, a: number) => `${(cx + Math.cos(a) * r).toFixed(2)} ${(cy + Math.sin(a) * r).toFixed(2)}`;
+  let d = '';
+  for (let i = 0; i < teeth; i++) {
+    const a = i * step - Math.PI / 2;
+    d += `${i === 0 ? 'M' : 'L'}${pt(rIn, a - rootHalf)} L${pt(rOut, a - tipHalf)} L${pt(rOut, a + tipHalf)} L${pt(rIn, a + rootHalf)} `;
+    // 齿根圆弧到下一个齿
+    d += `A${rIn} ${rIn} 0 0 1 ${pt(rIn, a + step - rootHalf)} `;
+  }
+  return `${d}Z`;
+})();
 
 export function SettingsIcon() {
   const { c } = useTheme();
   return (
-    <Svg width={20} height={20} viewBox="0 0 22 22" fill="none">
-      {GEAR_TEETH.map((line, i) => (
-        <Line
-          key={i}
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
-          stroke={c.text}
-          strokeWidth={2}
-          strokeLinecap="round"
-        />
-      ))}
-      <Circle cx={11} cy={11} r={5} stroke={c.text} strokeWidth={2} />
+    <Svg width={21} height={21} viewBox="0 0 24 24" fill="none">
+      <Path d={GEAR_PATH} stroke={c.text} strokeWidth={1.9} strokeLinejoin="round" />
+      <Circle cx={12} cy={12} r={3} stroke={c.text} strokeWidth={1.9} />
     </Svg>
   );
 }
