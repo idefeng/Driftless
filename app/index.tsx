@@ -24,6 +24,7 @@ import { getBpmThermalColor } from '../src/theme/thermalColor';
 import { TapTempoModal } from '../src/components/TapTempoModal';
 import { PaceCalculatorModal } from '../src/components/PaceCalculatorModal';
 import { ToolsSheet, ToolId } from '../src/components/ToolsSheet';
+import { useResponsive } from '../src/theme/layout';
 
 // 播放中上下滑动调节步频：每滑过这么多像素 ±1。
 const SWIPE_STEP_PX = 36;
@@ -40,6 +41,10 @@ export default function Home() {
   const [showTools, setShowTools] = useState(false);
 
   const thermal = getBpmThermalColor(bpm, isDark);
+  // 大屏且高度充足（折叠屏展开竖持 / 平板）时放大主数字与节拍脚印；横持高度不足时保持手机尺寸。
+  const { isLarge, height } = useResponsive();
+  const roomy = isLarge && height >= 800;
+  const bpmSize = roomy ? 176 : 138;
 
   // 播放 = 跑步模式：收起设置项，放大步频数字，整块中心区域可上下滑动 ±1。
   // 暂停 = 准备模式：展示音效 / 共存 / 计划等完整设置。
@@ -128,7 +133,11 @@ export default function Home() {
 
         <Animated.Text
           layout={LinearTransition.duration(280)}
-          style={[styles.bpm, { color: c.textStrong }, bpmStyle]}
+          style={[
+            styles.bpm,
+            { color: c.textStrong, fontSize: bpmSize, lineHeight: bpmSize * 0.92, letterSpacing: -bpmSize * 0.045 },
+            bpmStyle,
+          ]}
           accessibilityRole="adjustable"
           accessibilityLabel={t('home.currentCadence')}
           accessibilityValue={{ text: String(bpm) }}
@@ -140,7 +149,7 @@ export default function Home() {
         </Animated.Text>
 
         <Animated.View layout={LinearTransition.duration(280)} style={{ marginTop: isPlaying ? 30 : 18 }}>
-          <FootstepPulse color={thermal.base} glowColor={thermal.glow} size={50} running={isPlaying} />
+          <FootstepPulse color={thermal.base} glowColor={thermal.glow} size={roomy ? 64 : 50} running={isPlaying} />
         </Animated.View>
 
         {isPlaying ? (

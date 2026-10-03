@@ -2,6 +2,9 @@
 
 ## 1.1.0 · 2026-10-03
 
+- 大屏适配（折叠屏内屏 / 平板，短边 ≥ 600dp）：所有页面内容居中成最宽 640dp 的一列；首页在高度充足时放大步频数字与节拍脚印。
+- 屏幕方向：manifest 不再锁定竖屏（满足 Google Play 大屏质量要求），改为运行时策略——手机 / 折叠屏外屏锁竖屏，大屏放开旋转，折叠 / 展开时实时切换（新增 `expo-screen-orientation`）。
+- 修复大屏任务栏手势区域出现浅色条：新增本地 config plugin `plugins/withNavigationBarNoContrast` 关闭导航栏对比度强制；启动占位 / 导航栈背景改为品牌黑。
 - 品牌视觉 v2：主色由阳光橙改为荧光运动绿 `#C6FF3D`，默认黑底（`#0B0D0A`），保留白底「日光强光」模式、移除「夜跑红光」；荧光绿填充上的文字统一用近黑（新增 `onBrand` token），清理组件内写死的橙色。
 - 新 Logo：两只交错的脚印；首页 / 跑步页节拍可视化改为左右脚交替落地（`FootstepPulse`，替换 `BeatBars`）。
 - App 图标、Android 自适应 / 单色图标、启动屏、favicon 全部重绘；iOS Live Activity 与 Android 通知改用绿色与脚印图形（需重新出原生包）。

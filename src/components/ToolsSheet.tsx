@@ -71,6 +71,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
+    // 大屏上不铺满整屏宽
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
     borderTopLeftRadius: radius.card + 6,
     borderTopRightRadius: radius.card + 6,
     paddingHorizontal: 18,

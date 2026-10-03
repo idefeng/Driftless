@@ -7,9 +7,10 @@
       "policy": "appVersion"
     },
     "scheme": "driftless",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0D0A",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -51,7 +52,8 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "./plugins/withNavigationBarNoContrast"
     ],
     "experiments": {
       "typedRoutes": true

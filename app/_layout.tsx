@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, useColorScheme } from 'react-native';
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -23,16 +23,18 @@ import { CadenceProvider } from '../src/state/CadenceContext';
 import { I18nProvider } from '../src/i18n/I18nContext';
 import { OtaUpdateGate } from '../src/updates/OtaUpdateGate';
 import { logger } from '../src/utils/logger';
+import { useOrientationPolicy } from '../src/theme/layout';
+import { palettes } from '../src/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync().catch((error) => {
   logger.warn('启动屏幕保持失败。', error);
 });
 
 export default function RootLayout() {
-  // RootLayout 在 ThemeProvider 外层，直接用系统 scheme 取启动占位/栈背景色，
-  // 与 tokens 的 light.bg / dark.bg 保持一致，避免深色模式启动闪白。
-  const scheme = useColorScheme();
-  const bootBg = scheme === 'dark' ? '#141109' : '#F7F5F2';
+  // RootLayout 在 ThemeProvider 外层：启动占位 / 栈背景固定用品牌 v2 默认黑底，
+  // 避免启动闪白，也避免手势导航条区域露出浅色。
+  const bootBg = palettes.standard.bg;
+  useOrientationPolicy();
   const [loaded] = useSora({
     Sora_400Regular,
     Sora_500Medium,
