@@ -1,10 +1,14 @@
 # Driftless 上架文案（1.1.0 · 品牌视觉 v2）
 
-> 字数限制：Google Play 标题 ≤ 30、简短说明 ≤ 80、完整说明 ≤ 4000 字符。以下文案均已在限制内。
+> 字数限制：Google Play 标题 ≤ 30、简短说明 ≤ 80、完整说明 ≤ 4000、版本说明 ≤ 500 字符。以下文案均已在限制内。
+>
+> **直接粘贴用的分字段文件在 `listing/` 下**（en-US / zh-CN / zh-TW 三种语言，fastlane `supply` 目录结构）：
+> `listing/<语言>/title.txt`、`short_description.txt`、`full_description.txt`、`changelogs/10.txt`（10 = versionCode）。
+> 多语言版本说明一次性粘贴块：`listing/release-notes-1.1.0.txt`。繁体中文（zh-TW）仅在 `listing/zh-TW/` 中提供。
 
 ## 中文商店信息
 
-应用名称：Driftless
+应用名称（≤30）：Driftless 跑步步频节拍器
 
 副标题：一拍一步，跑出稳定步频
 

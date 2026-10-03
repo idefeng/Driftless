@@ -1,0 +1,21 @@
+<en-US>
+• New look: black & volt green with a footprint logo
+• One beat, one step: footprints land in time with the beat; swipe to adjust cadence while running
+• Gradual ramp between workout phases
+• Accent beats every 2 or 4 steps
+• 3-second countdown cue before each phase change
+</en-US>
+<zh-CN>
+· 全新品牌视觉：黑底 + 荧光运动绿，脚印 Logo
+· 首页一拍一步：左右脚印跟随节拍交替落地；跑步时可上下滑动调步频
+· 渐进过渡：换段前平滑变速到下一段步频
+· 重音拍：每 2 / 4 拍强拍提示，帮助感知左右脚节奏
+· 换段提示音：每段结束前 3 秒倒数
+</zh-CN>
+<zh-TW>
+· 全新品牌視覺：黑底 + 螢光運動綠，腳印 Logo
+· 首頁一拍一步：左右腳印跟隨節拍交替落地；跑步時可上下滑動調整步頻
+· 漸進過渡：換段前平順變速到下一段步頻
+· 重音拍：每 2 / 4 拍強拍提示，幫助感受左右腳節奏
+· 換段提示音：每段結束前 3 秒倒數
+</zh-TW>

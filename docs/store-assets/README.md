@@ -10,7 +10,8 @@
 | 商店截图（中文） | `screenshots/store-1080x1920/zh/01…06-*.png` | 1080×1920（9:16），Google Play 与 vivo 等国内商店通用 |
 | 商店截图（英文） | `screenshots/store-1080x1920/en/01…06-*.png` | 同上 |
 | 原始真机截图 | `screenshots/raw/{zh,en}/*.png` | 1080×2520（Galaxy Z Fold7 外屏），仅归档 |
-| 商店文案 | `store-listing-copy.md` | 中英文标题、简介、关键词、1.1.0 更新说明 |
+| 商店文案（阅读版） | `store-listing-copy.md` | 中英文标题、简介、关键词、1.1.0 更新说明 |
+| 商店文案（粘贴版） | `listing/{en-US,zh-CN,zh-TW}/*.txt` | 按 Play Console 字段拆分；`listing/release-notes-1.1.0.txt` 为多语言版本说明粘贴块 |
 | 隐私政策 | `privacy-policy.html` | — |
 
 ## 截图顺序与卖点
