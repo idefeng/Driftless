@@ -10,8 +10,9 @@ import { useCadence, formatClock, TrainingPlan } from '../src/state/CadenceConte
 import { useI18n } from '../src/i18n/I18nContext';
 import { PlanShareModal } from '../src/components/PlanShareModal';
 import { PlanImportModal } from '../src/components/PlanImportModal';
+import { PLAN_TEMPLATES, PlanTemplate } from '../src/state/planTemplates';
 
-function summarize(plan: TrainingPlan) {
+function summarize(plan: Pick<TrainingPlan, 'phases'> | Pick<PlanTemplate, 'phases'>) {
   const totalSec = plan.phases.reduce((a, p) => a + p.durationSec, 0);
   const avg = Math.round(plan.phases.reduce((a, p) => a + p.bpm * p.durationSec, 0) / (totalSec || 1));
   return { count: plan.phases.length, totalSec, avg };
@@ -21,7 +22,7 @@ export default function PlanList() {
   const { c, isDark } = useTheme();
   const { t, language } = useI18n();
   const router = useRouter();
-  const { plans, activePlanId, setActivePlanId, createPlan, deletePlan } = useCadence();
+  const { plans, activePlanId, setActivePlanId, createPlan, importPlan, deletePlan } = useCadence();
 
   const [sharePlan, setSharePlan] = useState<TrainingPlan | null>(null);
   const [importVisible, setImportVisible] = useState(false);
@@ -33,6 +34,14 @@ export default function PlanList() {
 
   const onCreate = () => {
     createPlan();
+    router.push('/plan');
+  };
+
+  const onUseTemplate = (tpl: PlanTemplate) => {
+    importPlan({
+      name: t(tpl.name),
+      phases: tpl.phases.map((ph) => ({ name: t(ph.name), durationSec: ph.durationSec, bpm: ph.bpm })),
+    });
     router.push('/plan');
   };
 
@@ -130,6 +139,40 @@ export default function PlanList() {
         {plans.length > 1 && (
           <Text style={[styles.deleteHint, { color: c.textFaint }]}>{t('planList.deleteHint')}</Text>
         )}
+
+        {/* Built-in templates (v1.1): one tap → an ordinary, editable plan */}
+        <View style={styles.templateHeader}>
+          <Text style={[styles.templateTitle, { color: c.text }]}>{t('planList.templates')}</Text>
+          <Text style={[styles.summary, { color: c.textFaint }]}>{t('planList.templatesHint')}</Text>
+        </View>
+        {PLAN_TEMPLATES.map((tpl) => {
+          const { count, totalSec, avg } = summarize(tpl);
+          return (
+            <Pressable
+              key={tpl.id}
+              onPress={() => onUseTemplate(tpl)}
+              accessibilityRole="button"
+              accessibilityLabel={t(tpl.name)}
+              style={({ pressed }) => [
+                styles.templateCard,
+                { backgroundColor: c.cardAlt, opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.templateName, { color: c.text }]} numberOfLines={1}>
+                  {t(tpl.name)}
+                </Text>
+                <Text style={[styles.summary, { color: c.textMuted }]} numberOfLines={2}>
+                  {t(tpl.desc)}
+                </Text>
+                <Text style={[styles.summary, { color: c.textFaint }]}>
+                  {t('planList.summary', { count, duration: formatClock(totalSec), avg })}
+                </Text>
+              </View>
+              <Text style={[styles.templateAdd, { color: c.brandText }]}>+</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       {/* Share QR Code Modal */}
@@ -196,5 +239,17 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
   },
+  templateHeader: { marginTop: 18, gap: 2 },
+  templateTitle: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  templateCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+  },
+  templateName: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  templateAdd: { fontFamily: fonts.bodyBold, fontSize: 22 },
   deleteHint: { fontFamily: fonts.bodyMedium, fontSize: 12, textAlign: 'center', marginTop: 10 },
 });
