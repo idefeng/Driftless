@@ -9,6 +9,7 @@
     "@expo/metro-runtime": "~56.0.15",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~56.0.12",
+    "expo-build-properties": "~56.0.27",
     "expo-constants": "~56.0.18",
     "expo-font": "~56.0.7",
     "expo-keep-awake": "~56.0.3",

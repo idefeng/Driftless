@@ -53,7 +53,16 @@
         }
       ],
       "expo-localization",
-      "./plugins/withNavigationBarNoContrast"
+      "./plugins/withNavigationBarNoContrast",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

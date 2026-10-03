@@ -2,6 +2,8 @@
 
 ## 1.1.0 · 2026-10-03
 
+- 开启 R8：release 构建启用代码压缩与资源压缩（`expo-build-properties`），本地 release 包 35.7 MB、dex 由 18 个减至 3 个；已在 Fold7 真机回归播放、±1、滑动、通知栏 ±1、训练换段等路径，无缺类 / 反射崩溃。
+- 已弃用的 system-bar API（`Window.setStatusBarColor` / `setNavigationBarColor`）：自有代码无调用；R8 后依赖中的调用点由 16 处降到 8 处，剩余位于 React Native 核心、Material、AndroidX SplashScreen，均按系统版本守卫（仅 Android 14 及以下执行），需随依赖升级消除。
 - 大屏适配（折叠屏内屏 / 平板，短边 ≥ 600dp）：所有页面内容居中成最宽 640dp 的一列；首页在高度充足时放大步频数字与节拍脚印。
 - 屏幕方向：manifest 不再锁定竖屏（满足 Google Play 大屏质量要求），改为运行时策略——手机 / 折叠屏外屏锁竖屏，大屏放开旋转，折叠 / 展开时实时切换（新增 `expo-screen-orientation`）。
 - 修复大屏任务栏手势区域出现浅色条：新增本地 config plugin `plugins/withNavigationBarNoContrast` 关闭导航栏对比度强制；启动占位 / 导航栈背景改为品牌黑。
