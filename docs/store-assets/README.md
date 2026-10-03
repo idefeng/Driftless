@@ -1,37 +1,38 @@
-# Driftless 上架素材包
+# Driftless 上架素材包（1.1.0 · 品牌视觉 v2：黑底 + 荧光运动绿）
 
-## 已生成文件
+## 文件一览
 
-- Google Play 图标：`generated/google-play-icon-512.png`
-- Google Play 英文横幅：`generated/feature-graphic-en-1024x500.png`
-- 国内中文横幅：`generated/feature-graphic-zh-1024x500.png`
-- 隐私政策 HTML：`privacy-policy.html`
-- 原始首页截图：`screenshots/raw/01-home.png`
-- 原始音色截图：`screenshots/raw/02-sounds.png`
-- 原始共存设置截图：`screenshots/raw/03-coexist.png`
-- 原始训练计划截图：`screenshots/raw/04-plan.png`
-- 原始训练运行截图：`screenshots/raw/05-running.png`
-- vivo 1080×1920 首页截图：`screenshots/vivo-1080x1920/01-home.png`
-- vivo 1080×1920 音色截图：`screenshots/vivo-1080x1920/02-sounds.png`
-- vivo 1080×1920 共存设置截图：`screenshots/vivo-1080x1920/03-coexist.png`
-- vivo 1080×1920 训练计划截图：`screenshots/vivo-1080x1920/04-plan.png`
-- vivo 1080×1920 训练运行截图：`screenshots/vivo-1080x1920/05-running.png`
+| 用途 | 文件 | 规格 |
+|---|---|---|
+| Google Play 应用图标 | `generated/google-play-icon-512.png` | 512×512 PNG（Play 自动加圆角遮罩，图内勿自带圆角） |
+| Google Play 置顶大图（英文） | `generated/feature-graphic-en-1024x500.png` | 1024×500 PNG |
+| 置顶大图 / 国内商店横幅（中文） | `generated/feature-graphic-zh-1024x500.png` | 1024×500 PNG |
+| 商店截图（中文） | `screenshots/store-1080x1920/zh/01…06-*.png` | 1080×1920（9:16），Google Play 与 vivo 等国内商店通用 |
+| 商店截图（英文） | `screenshots/store-1080x1920/en/01…06-*.png` | 同上 |
+| 原始真机截图 | `screenshots/raw/{zh,en}/*.png` | 1080×2520（Galaxy Z Fold7 外屏），仅归档 |
+| 商店文案 | `store-listing-copy.md` | 中英文标题、简介、关键词、1.1.0 更新说明 |
+| 隐私政策 | `privacy-policy.html` | — |
 
-## 截图规格
+## 截图顺序与卖点
 
-- 原始截图尺寸：1440 x 3168 PNG。
-- vivo 截图尺寸：1080 x 1920 PNG。
-- 用途：原始截图用于通用素材归档；`screenshots/vivo-1080x1920/` 用于 vivo 商店上传。
-- 备注：当前截图为中文系统地区下的中文界面。若要做 Google Play 英文首发，建议后续把设备地区切到美国后再截一组英文截图。
+| # | 文件 | 中文标题 | English |
+|---|---|---|---|
+| 1 | `01-one-beat-one-step` | 一拍一步 · 稳住步频 | One beat. One step. |
+| 2 | `02-intervals` | 间歇训练 · 自动换段 | Intervals that shift for you |
+| 3 | `03-plans` | 自定义 · 训练计划 | Build your own workout |
+| 4 | `04-music` | 边听音乐 · 边跑节拍 | Keep your music playing |
+| 5 | `05-sounds` | 5 种音色 · + 重音拍 | 5 sounds + accent beats |
+| 6 | `06-blind-control` | 大按钮 · 盲操 ±1 | Big buttons. Blind ±1. |
+
+## 说明
+
+- 原始截图长宽比 2.33，超过 Google Play「长边 ≤ 短边 2 倍」的限制，**不要直接上传 `raw/`**；上传 `store-1080x1920/` 下的合成图。
+- 合成图已裁掉状态栏与系统导航条，画面中不含个人通知信息。
+- 截图来自 1.1.0 开发构建，计划名 / 阶段名在中文组为默认的「计划 1 / 热身 / 巡航 / 冲刺」，英文组为「Tempo / Warm-up / Cruise / Sprint」。
+- 如需平板截图（Play 的 7 / 10 英寸栏位，可选），可在 Fold7 展开内屏（1968×2184）后另截一组。
 
 ## 安装包
 
-- 当前 OTA 基线版本：`1.0.1`。
-- 当前源码包名（`app.json`）：`com.idefeng.driftless`（2026-07-12 从 `com.fengqun.driftless` 改回；下方各安装包仍分别标注各自实际构建时的包名）。
-- Google Play AAB：<https://expo.dev/artifacts/eas/JaHgsSRSxxtIzemm9y6OW4zekgtBDbrzEVbx7jdf2Ew.aab>（versionCode `3`，包名 `com.fengqun.driftless`）。
-- vivo/国内渠道 APK：<https://expo.dev/artifacts/eas/v2IGNcYLqPsG6NxWGF3M-g1iRQlPs9-pMkJW2hkUKfA.apk>（versionCode `6`）。
-- 本地 Google Play AAB：`../../dist/driftless-1.0.1-android-v3-com-fengqun-driftless-google-play.aab`。
-- 上一版 `com.idefeng.driftless` Google Play AAB：<https://expo.dev/artifacts/eas/W4aR0acbrtnrOS8XigKVW_HWYDulTUuZmoxnOndVqCE.aab>（不适合当前新 Google Play 账号继续创建应用）。
-- 历史 1.0.0 vivo/国内渠道 APK：`../../dist/driftless-1.0.0-android-v3-com-idefeng-driftless-vivo.apk`（未内置 OTA，不建议继续上传）。
-- 历史 1.0.0 Google Play AAB：`../../dist/driftless-1.0.0-android-v2-com-idefeng-driftless.aab`（未内置 OTA，不建议继续上传）。
-- 注意：不要上传旧的 `dist/driftless-1.0.0-android-v2.aab`、`dist/driftless-1.0.0-android-v3-vivo.apk` 或 `android/app/build/outputs/apk/release/app-release.apk`。
+- 当前版本：`1.1.0`（versionCode 10），EAS 构建 `765fdfdf-4ef7-4ecb-9d51-c11cdfec8f27`，使用 2026-08 重置后的 Play 上传密钥签名。
+- EAS 尚未关联 Play Console 服务账号，AAB 需在 Play Console 手动上传。
+- 历史 1.0.x 安装包（橙色旧版视觉）不建议再上传。
