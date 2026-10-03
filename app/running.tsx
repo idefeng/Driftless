@@ -13,7 +13,7 @@ import { getBpmThermalColor } from '../src/theme/thermalColor';
 
 export default function Running() {
   const { c, isDark } = useTheme();
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const { plan, phaseIndex, phaseEndAtMs, running, bpm, isPlaying, step, togglePlay, skipPhase, stopWorkout } =
     useCadence();
@@ -23,7 +23,6 @@ export default function Running() {
 
   // Dynamic thermal color for current active cadence during workout
   const thermal = getBpmThermalColor(bpm, isDark);
-  const thermalLabel = language === 'zh' ? thermal.labelZh : thermal.labelEn;
 
   // 秒级倒计时在本地推导
   const [remainingSec, setRemainingSec] = useState(() =>
@@ -107,7 +106,7 @@ export default function Running() {
             {t('running.phaseProgress', { name: phase.name, current: phaseIndex + 1, total: plan.length })}
           </Text>
           <View style={[styles.thermalBadge, { backgroundColor: thermal.chipBg }]}>
-            <Text style={[styles.thermalText, { color: thermal.base }]}>{thermalLabel}</Text>
+            <Text style={[styles.thermalText, { color: thermal.text }]}>{t(thermal.labelKey)}</Text>
           </View>
         </View>
 

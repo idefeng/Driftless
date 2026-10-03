@@ -171,6 +171,20 @@ export function SettingsIcon() {
   );
 }
 
+// ── Stopwatch glyph (pre-run tools entry) ──────────────────────────────
+export function ToolsIcon({ color }: { color?: string }) {
+  const { c } = useTheme();
+  const stroke = color ?? c.textFaint;
+  return (
+    <Svg width={20} height={20} viewBox="0 0 22 22" fill="none" stroke={stroke} strokeWidth={2} strokeLinecap="round">
+      <Circle cx={11} cy={12.5} r={7} />
+      <Line x1={11} y1={12.5} x2={11} y2={8.5} />
+      <Line x1={8.5} y1={2.5} x2={13.5} y2={2.5} />
+      <Line x1={17} y1={6} x2={18.5} y2={4.5} />
+    </Svg>
+  );
+}
+
 export function CheckIcon({ color = '#fff', size = 17 }: { color?: string; size?: number }) {
   return (
     <Svg width={size} height={(size * 13) / 17} viewBox="0 0 17 13" fill="none">
