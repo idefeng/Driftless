@@ -20,6 +20,7 @@ import {
 } from '@expo-google-fonts/manrope';
 import { ThemeProvider } from '../src/theme/ThemeContext';
 import { CadenceProvider } from '../src/state/CadenceContext';
+import { SessionProvider } from '../src/state/SessionContext';
 import { I18nProvider } from '../src/i18n/I18nContext';
 import { OtaUpdateGate } from '../src/updates/OtaUpdateGate';
 import { logger } from '../src/utils/logger';
@@ -63,23 +64,26 @@ export default function RootLayout() {
       <ThemeProvider>
         <I18nProvider>
           <CadenceProvider>
-            <OtaUpdateGate />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'slide_from_right',
-                contentStyle: { backgroundColor: bootBg },
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="sounds" options={{ presentation: 'card' }} />
-              <Stack.Screen name="coexist" options={{ presentation: 'card' }} />
-              <Stack.Screen name="settings" options={{ presentation: 'card' }} />
-              <Stack.Screen name="language" options={{ presentation: 'card' }} />
-              <Stack.Screen name="plan-list" options={{ presentation: 'card' }} />
-              <Stack.Screen name="plan" options={{ presentation: 'card' }} />
-              <Stack.Screen name="running" options={{ animation: 'slide_from_bottom' }} />
-            </Stack>
+            <SessionProvider>
+              <OtaUpdateGate />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  contentStyle: { backgroundColor: bootBg },
+                }}
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="sounds" options={{ presentation: 'card' }} />
+                <Stack.Screen name="coexist" options={{ presentation: 'card' }} />
+                <Stack.Screen name="settings" options={{ presentation: 'card' }} />
+                <Stack.Screen name="language" options={{ presentation: 'card' }} />
+                <Stack.Screen name="plan-list" options={{ presentation: 'card' }} />
+                <Stack.Screen name="plan" options={{ presentation: 'card' }} />
+                <Stack.Screen name="running" options={{ animation: 'slide_from_bottom' }} />
+                <Stack.Screen name="history" options={{ presentation: 'card' }} />
+              </Stack>
+            </SessionProvider>
           </CadenceProvider>
         </I18nProvider>
       </ThemeProvider>

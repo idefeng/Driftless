@@ -10,6 +10,7 @@ import { fonts } from '../src/theme/tokens';
 import { useCadence, formatClock } from '../src/state/CadenceContext';
 import { useI18n } from '../src/i18n/I18nContext';
 import { getBpmThermalColor } from '../src/theme/thermalColor';
+import { MeasuredCadence } from '../src/components/MeasuredCadence';
 
 export default function Running() {
   const { c, isDark } = useTheme();
@@ -19,6 +20,8 @@ export default function Running() {
     useCadence();
 
   const phase = plan[phaseIndex] ?? plan[0];
+  // 阶段多（如间歇跑模板 13 段）时一行放不下全部名称：只给当前段显示名称，其余收成圆点。
+  const compactStepper = plan.length > 5;
   const next = plan[phaseIndex + 1];
 
   // Dynamic thermal color for current active cadence during workout
@@ -66,8 +69,15 @@ export default function Running() {
           const active = i === phaseIndex;
           return (
             <React.Fragment key={p.id}>
-              {i > 0 && <View style={[styles.stepperLine, { backgroundColor: c.trackInactive }]} />}
-              <View style={[styles.stepperItem, { opacity: active ? 1 : 0.5 }]}>
+              {i > 0 && (
+                <View
+                  style={[
+                    compactStepper ? styles.stepperLineCompact : styles.stepperLine,
+                    { backgroundColor: c.trackInactive },
+                  ]}
+                />
+              )}
+              <View style={[compactStepper ? styles.stepperItemCompact : styles.stepperItem, { opacity: active ? 1 : 0.5 }]}>
                 {done ? (
                   <View style={[styles.stepDot, { backgroundColor: c.trackInactive }]}>
                     <Svg width={10} height={8} viewBox="0 0 10 8" fill="none">
@@ -84,15 +94,19 @@ export default function Running() {
                     ]}
                   />
                 )}
-                <Text
-                  style={{
-                    fontFamily: active ? fonts.bodyBold : fonts.bodySemiBold,
-                    fontSize: 12,
-                    color: active ? thermal.base : c.textFaint,
-                  }}
-                >
-                  {p.name}
-                </Text>
+                {(!compactStepper || active) && (
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontFamily: active ? fonts.bodyBold : fonts.bodySemiBold,
+                      fontSize: 12,
+                      color: active ? thermal.base : c.textFaint,
+                      flexShrink: 1,
+                    }}
+                  >
+                    {p.name}
+                  </Text>
+                )}
               </View>
             </React.Fragment>
           );
@@ -125,6 +139,10 @@ export default function Running() {
 
         <View style={{ marginTop: 4 }}>
           <FootstepPulse color={thermal.base} glowColor={thermal.glow} size={44} running={isPlaying} />
+        </View>
+
+        <View style={{ marginTop: 14 }}>
+          <MeasuredCadence target={bpm} />
         </View>
 
         {/* segment remaining + progress */}
@@ -209,6 +227,8 @@ const styles = StyleSheet.create({
   },
   stepperItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepperLine: { height: 2, width: 14 },
+  stepperItemCompact: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 },
+  stepperLineCompact: { height: 2, flex: 1, minWidth: 4 },
   stepDot: { width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   stepDotSmall: { width: 8, height: 8, borderRadius: 4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },

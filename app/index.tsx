@@ -25,6 +25,7 @@ import { TapTempoModal } from '../src/components/TapTempoModal';
 import { PaceCalculatorModal } from '../src/components/PaceCalculatorModal';
 import { ToolsSheet, ToolId } from '../src/components/ToolsSheet';
 import { useResponsive } from '../src/theme/layout';
+import { MeasuredCadence } from '../src/components/MeasuredCadence';
 
 // 播放中上下滑动调节步频：每滑过这么多像素 ±1。
 const SWIPE_STEP_PX = 36;
@@ -153,14 +154,15 @@ export default function Home() {
         </Animated.View>
 
         {isPlaying ? (
-          <Animated.Text
+          <Animated.View
             key="swipe-hint"
             entering={FadeIn.duration(240).delay(120)}
             exiting={FadeOut.duration(120)}
-            style={[styles.swipeHint, { color: c.textFaint }]}
+            style={styles.playingInfo}
           >
-            {t('home.swipeHint')}
-          </Animated.Text>
+            <MeasuredCadence target={bpm} />
+            <Text style={[styles.swipeHint, { color: c.textFaint }]}>{t('home.swipeHint')}</Text>
+          </Animated.View>
         ) : (
           <Animated.View
             key="chips"
@@ -298,11 +300,15 @@ const styles = StyleSheet.create({
   planChipText: {
     maxWidth: 72,
   },
+  playingInfo: {
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 22,
+  },
   swipeHint: {
     fontFamily: fonts.bodySemiBold,
     fontSize: 12,
     letterSpacing: 1,
-    marginTop: 22,
   },
   steps: {
     flexDirection: 'row',

@@ -5,10 +5,11 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
-import { ChevronRightIcon } from '../src/components/ui';
+import { ChevronRightIcon, Toggle } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, VisualMode } from '../src/theme/tokens';
 import { useCadence } from '../src/state/CadenceContext';
+import { useSession } from '../src/state/SessionContext';
 import { useI18n } from '../src/i18n/I18nContext';
 import { getSoundShortName } from '../src/i18n/labels';
 
@@ -17,7 +18,37 @@ export default function Settings() {
   const { t, languagePreference, language } = useI18n();
   const router = useRouter();
   const { plans, sound, coexist } = useCadence();
+  const { measureSupported, measureEnabled, setMeasureEnabled, history } = useSession();
   const [checkingOta, setCheckingOta] = useState(false);
+
+  const toggleMeasure = async (on: boolean) => {
+    const ok = await setMeasureEnabled(on);
+    if (on && !ok && measureSupported) {
+      Alert.alert(t('measure.deniedTitle'), t('measure.deniedMessage'));
+    }
+  };
+
+  const loopRows = [
+    {
+      title: t('measure.title'),
+      sub: !measureSupported
+        ? t('measure.subUnsupported')
+        : measureEnabled
+          ? t('measure.subOn')
+          : t('measure.subOff'),
+      onPress: () => measureSupported && toggleMeasure(!measureEnabled),
+      rightIcon: measureSupported ? (
+        <Toggle value={measureEnabled} onChange={toggleMeasure} label={t('measure.title')} />
+      ) : (
+        <View />
+      ),
+    },
+    {
+      title: t('history.title'),
+      sub: t('settings.historySub', { count: history.length }),
+      onPress: () => router.push('/history'),
+    },
+  ];
 
   const appVersion = Constants.expoConfig?.version || '1.1.0';
   const updateId = Updates.updateId ? Updates.updateId.slice(0, 8) : null;
@@ -169,6 +200,27 @@ export default function Settings() {
               );
             })}
           </View>
+        </View>
+
+        {/* Training loop (v1.2): measured cadence + local history */}
+        <Text style={[styles.sectionTitle, { color: c.textFaint, marginTop: 22 }]}>{t('settings.runData')}</Text>
+        <View style={[styles.group, { backgroundColor: c.card, shadowOpacity: isDark ? 0 : 0.05 }]}>
+          {loopRows.map((row, i) => (
+            <Pressable key={row.title} onPress={row.onPress} accessibilityRole="button" accessibilityLabel={row.title}>
+              <View
+                style={[
+                  styles.row,
+                  i < loopRows.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.divider },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowTitle, { color: c.text }]}>{row.title}</Text>
+                  <Text style={[styles.rowSub, { color: c.textFaint }]}>{row.sub}</Text>
+                </View>
+                {row.rightIcon || <ChevronRightIcon />}
+              </View>
+            </Pressable>
+          ))}
         </View>
 
         {/* General Settings Group */}
