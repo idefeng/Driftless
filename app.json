@@ -53,6 +53,7 @@
       ],
       "expo-localization",
       "./plugins/withNavigationBarNoContrast",
+      "./plugins/withGradleMemory",
       [
         "expo-build-properties",
         {
@@ -61,7 +62,8 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

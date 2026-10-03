@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 升级 Expo SDK 57：React Native 0.85.3 → 0.86.3（修复 Hermes V1 内存回退）、Reanimated 4.3 → 4.5、Worklets 0.8 → 0.10，Expo 各模块升至 57.x；SDK 57 新要求的 `expo-status-bar` config plugin 已加入。expo-doctor 21/21 通过。
+- 新增 config plugin `plugins/withGradleMemory`：SDK 57 下 release 构建的 `:expo-updates:kspReleaseKotlin` 会耗尽默认 512MB Metaspace，调高 Gradle / Kotlin 守护进程内存（本地与 EAS 均生效）。
+- 已在 Galaxy Z Fold7 真机回归 release（R8）包：播放、±1、滑动、节拍脚印动画、通知栏 ±1、重音切换、训练换段均正常，无崩溃。
 - OTA `runtimeVersion` 策略由 `appVersion` 改为 `fingerprint`：原生层任何变化都会自动换 runtime，OTA 只下发给原生一致的安装包，避免同版本号的不同原生包（如 1.1.0 vc10 / vc11）收到不兼容的 JS。已用 `eas fingerprint:compare` 确认本地与 EAS 构建的指纹一致。注意：1.1.0（vc11）构建于切换前，runtime 固定为 `1.1.0`，给它发热修复需临时指定该 runtime（见 README）。
 
 ## 1.1.0 · 2026-10-03
