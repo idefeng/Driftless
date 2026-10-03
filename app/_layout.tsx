@@ -20,7 +20,7 @@ import {
 } from '@expo-google-fonts/manrope';
 import { ThemeProvider } from '../src/theme/ThemeContext';
 import { CadenceProvider } from '../src/state/CadenceContext';
-import { SessionProvider } from '../src/state/SessionContext';
+import { SessionProvider, WorkoutSummaryGate } from '../src/state/SessionContext';
 import { I18nProvider } from '../src/i18n/I18nContext';
 import { OtaUpdateGate } from '../src/updates/OtaUpdateGate';
 import { logger } from '../src/utils/logger';
@@ -82,7 +82,8 @@ export default function RootLayout() {
                 <Stack.Screen name="plan" options={{ presentation: 'card' }} />
                 <Stack.Screen name="running" options={{ animation: 'slide_from_bottom' }} />
                 <Stack.Screen name="history" options={{ presentation: 'card' }} />
-              </Stack>
+                </Stack>
+              <WorkoutSummaryGate />
             </SessionProvider>
           </CadenceProvider>
         </I18nProvider>

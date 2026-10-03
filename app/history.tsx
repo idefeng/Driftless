@@ -1,75 +1,25 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, Alert } from 'react-native';
-import Svg, { Polyline } from 'react-native-svg';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
+import { CadenceSparkline } from '../src/components/CadenceSparkline';
+import { ShareSessionModal } from '../src/components/ShareSessionModal';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts } from '../src/theme/tokens';
-import { formatClock } from '../src/state/CadenceContext';
 import { useSession } from '../src/state/SessionContext';
 import { SessionRecord, summarizeSince } from '../src/state/sessionStats';
 import { useI18n } from '../src/i18n/I18nContext';
-import type { AppLanguage } from '../src/i18n/language';
+import { formatDate, formatDuration } from '../src/utils/format';
 
 const WEEK_MS = 7 * 24 * 3600 * 1000;
-const EN_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-// 手写日期格式，不依赖 Hermes 的 Intl 完整度。
-function formatDate(ms: number, language: AppLanguage): string {
-  const d = new Date(ms);
-  const hm = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-  return language === 'zh'
-    ? `${d.getMonth() + 1}月${d.getDate()}日 ${hm}`
-    : `${EN_MONTHS[d.getMonth()]} ${d.getDate()}, ${hm}`;
-}
-
-/** 时长：不足 1 小时显示 m:ss，否则 h:mm:ss。 */
-function formatDuration(sec: number): string {
-  if (sec < 3600) return formatClock(sec);
-  const h = Math.floor(sec / 3600);
-  return `${h}:${formatClock(sec % 3600).padStart(5, '0')}`;
-}
-
 const SPARK_W = 120;
 const SPARK_H = 36;
-
-/** 目标（虚线、弱色）与实测（品牌色）步频曲线；纵轴按两者共同范围自适应。 */
-function Sparkline({ record, targetColor, spmColor }: { record: SessionRecord; targetColor: string; spmColor: string }) {
-  const { series } = record;
-  if (series.length < 2) return null;
-  const values = series.flatMap((p) => (p.spm == null ? [p.target] : [p.target, p.spm]));
-  const lo = Math.min(...values) - 3;
-  const hi = Math.max(...values) + 3;
-  const x = (i: number) => (i / (series.length - 1)) * SPARK_W;
-  const y = (v: number) => SPARK_H - ((v - lo) / (hi - lo)) * SPARK_H;
-  const target = series.map((p, i) => `${x(i).toFixed(1)},${y(p.target).toFixed(1)}`).join(' ');
-  // 实测曲线遇到没有读数的点会断开，分段绘制。
-  const spmSegments: string[] = [];
-  let current: string[] = [];
-  series.forEach((p, i) => {
-    if (p.spm == null) {
-      if (current.length > 1) spmSegments.push(current.join(' '));
-      current = [];
-    } else {
-      current.push(`${x(i).toFixed(1)},${y(p.spm).toFixed(1)}`);
-    }
-  });
-  if (current.length > 1) spmSegments.push(current.join(' '));
-
-  return (
-    <Svg width={SPARK_W} height={SPARK_H}>
-      <Polyline points={target} fill="none" stroke={targetColor} strokeWidth={1.5} strokeDasharray="3 3" />
-      {spmSegments.map((pts, i) => (
-        <Polyline key={i} points={pts} fill="none" stroke={spmColor} strokeWidth={2} strokeLinejoin="round" />
-      ))}
-    </Svg>
-  );
-}
 
 export default function History() {
   const { c, isDark } = useTheme();
   const { t, language } = useI18n();
   const { history, deleteRecord, clearHistory } = useSession();
+  const [shareRecord, setShareRecord] = useState<SessionRecord | null>(null);
 
   // 进入页面时取一次「现在」即可，最近 7 天的边界不需要实时滚动。
   const week = useMemo(() => summarizeSince(history, Date.now() - WEEK_MS), [history]);
@@ -128,6 +78,7 @@ export default function History() {
             {history.map((r) => (
               <Pressable
                 key={r.id}
+                onPress={() => setShareRecord(r)}
                 onLongPress={() => confirmDelete(r)}
                 delayLongPress={400}
                 accessibilityRole="button"
@@ -154,7 +105,13 @@ export default function History() {
                         </Text>
                       </View>
                     )}
-                    <Sparkline record={r} targetColor={c.textFaint} spmColor={c.brand} />
+                    <CadenceSparkline
+                      series={r.series}
+                      width={SPARK_W}
+                      height={SPARK_H}
+                      targetColor={c.textFaint}
+                      spmColor={c.brand}
+                    />
                   </View>
                 </View>
               </Pressable>
@@ -167,6 +124,8 @@ export default function History() {
           </>
         )}
       </ScrollView>
+
+      <ShareSessionModal record={shareRecord} visible={!!shareRecord} onClose={() => setShareRecord(null)} />
     </Screen>
   );
 }

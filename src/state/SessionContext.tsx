@@ -5,6 +5,7 @@ import CadenceSteps from '../../modules/cadence-steps';
 import { useCadence } from './CadenceContext';
 import { CadenceEstimator, SessionRecorder, SessionRecord, isValidRecord } from './sessionStats';
 import { logger } from '../utils/logger';
+import { ShareSessionModal } from '../components/ShareSessionModal';
 
 // 训练记录与实测步频开关单独存档，和 CadenceContext 的设置存档互不影响。
 const STORAGE_KEY = 'driftless.session.v1';
@@ -27,6 +28,9 @@ interface SessionApi {
   history: SessionRecord[];
   deleteRecord: (id: string) => void;
   clearHistory: () => void;
+  /** 刚结束的结构化训练记录（用于自动弹出分享卡片）；看过后置空。 */
+  lastWorkout: SessionRecord | null;
+  dismissLastWorkout: () => void;
 }
 
 const Ctx = createContext<SessionApi | null>(null);
@@ -59,6 +63,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<SessionRecord[]>([]);
   const [liveSpm, setLiveSpm] = useState<number | null>(null);
   const [liveFollow, setLiveFollow] = useState<number | null>(null);
+  const [lastWorkout, setLastWorkout] = useState<SessionRecord | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -139,7 +144,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setLiveSpm(null);
       setLiveFollow(null);
       const record = recorder.finish(`s${recorder.startedAt}`);
-      if (record) setHistory((prev) => [record, ...prev].slice(0, MAX_RECORDS));
+      if (record) {
+        setHistory((prev) => [record, ...prev].slice(0, MAX_RECORDS));
+        // 只有结构化训练结束才自动弹卡片；自由节拍随手暂停就弹窗会打扰。
+        if (record.planName != null) setLastWorkout(record);
+      }
     };
     // running 变化也切分：自由节拍 → 结构化训练时，计划名要跟着变。
   }, [sessionOpen, running]);
@@ -164,6 +173,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearHistory = useCallback(() => setHistory([]), []);
+  const dismissLastWorkout = useCallback(() => setLastWorkout(null), []);
 
   const value = useMemo<SessionApi>(
     () => ({
@@ -175,11 +185,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       history,
       deleteRecord,
       clearHistory,
+      lastWorkout,
+      dismissLastWorkout,
     }),
-    [measureSupported, measureEnabled, setMeasureEnabled, liveSpm, liveFollow, history, deleteRecord, clearHistory],
+    [
+      measureSupported, measureEnabled, setMeasureEnabled, liveSpm, liveFollow, history, deleteRecord, clearHistory,
+      lastWorkout, dismissLastWorkout,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/** 训练结束后自动弹出分享卡片；挂在根布局里，跨页面生效。 */
+export function WorkoutSummaryGate() {
+  const { lastWorkout, dismissLastWorkout } = useSession();
+  return (
+    <ShareSessionModal record={lastWorkout} visible={!!lastWorkout} onClose={dismissLastWorkout} celebrate />
+  );
 }
 
 export function useSession() {
