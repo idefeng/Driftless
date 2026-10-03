@@ -8,12 +8,12 @@
  * timestamp falls inside it, computed from the sample clock — yielding
  * < 1ms jitter and zero cumulative drift.
  *
- * In this UI build the actual sample-accurate enqueue is delegated to a native
- * module (AVAudioEngine on iOS / AAudio on Android) that isn't wired yet, so
- * `enqueueBeat` is a stub. The scheduling math, the look-ahead loop, and the
- * "natural finish, instant re-rate" segment transition (PRD §3.4) are real and
- * already drive the on-screen beat callbacks. Swapping the stub for the native
- * bridge is the only remaining step to make it audible.
+ * The native engine (modules/cadence-audio: AVAudioEngine on iOS / AudioTrack
+ * on Android) is the real audio path; this scheduler only remains as the
+ * Expo Go fallback, where it drives the on-screen beat callbacks for visual
+ * sync — `enqueueBeat` stays a no-op stub, so no sound without a dev build.
+ * The scheduling math, the look-ahead loop, and the "natural finish, instant
+ * re-rate" segment transition (PRD §3.4) mirror the native engine's behavior.
  */
 
 export const BPM_MIN = 100;
@@ -21,6 +21,11 @@ export const BPM_MAX = 250;
 
 const LOOKAHEAD_WINDOW_MS = 150; // PRD-suggested 100–200ms scheduling window
 const TICK_MS = 50; // how often we refill the window
+// Catch-up cap: after a JS suspension (e.g. app backgrounded) nextBeatTime can
+// lag far behind; replaying every missed beat up to the horizon would spawn a
+// storm of overdue timers, so beats older than this are dropped and we resume
+// from now instead.
+const CATCHUP_CAP_MS = 500;
 
 export const clampBpm = (bpm: number) =>
   Math.max(BPM_MIN, Math.min(BPM_MAX, Math.round(bpm)));
@@ -34,7 +39,6 @@ export class CadenceScheduler {
   private timer: ReturnType<typeof setInterval> | null = null;
   private nextBeatTime = 0; // absolute ms timestamp of the next unscheduled beat
   private beatIndex = 0;
-  private scheduledUpTo = 0;
   private listeners = new Set<BeatListener>();
 
   get isRunning() {
@@ -67,7 +71,6 @@ export class CadenceScheduler {
     const now = Date.now();
     this.nextBeatTime = now;
     this.beatIndex = 0;
-    this.scheduledUpTo = now;
     this.tick();
     this.timer = setInterval(() => this.tick(), TICK_MS);
   }
@@ -81,25 +84,33 @@ export class CadenceScheduler {
   /** Look-ahead refill: enqueue every beat inside the next window. */
   private tick() {
     if (!this.running) return;
-    const horizon = Date.now() + LOOKAHEAD_WINDOW_MS;
+    const now = Date.now();
+    // Drop beats left behind by a JS suspension instead of catching up to the
+    // horizon one by one (an hour backgrounded ≈ thousands of setTimeouts).
+    if (this.nextBeatTime < now - CATCHUP_CAP_MS) {
+      this.nextBeatTime = now;
+    }
+    const horizon = now + LOOKAHEAD_WINDOW_MS;
     while (this.nextBeatTime <= horizon) {
       this.enqueueBeat(this.beatIndex, this.nextBeatTime);
       const idx = this.beatIndex;
       const at = this.nextBeatTime;
-      const delay = Math.max(0, at - Date.now());
-      // Visual callback fired at (close to) the scheduled instant.
-      setTimeout(() => this.listeners.forEach((l) => l(idx, at)), delay);
+      const delay = Math.max(0, at - now);
+      // Visual callback fired at (close to) the scheduled instant; the running
+      // guard keeps timers scheduled before stop() from firing afterwards.
+      setTimeout(() => {
+        if (this.running) this.listeners.forEach((l) => l(idx, at));
+      }, delay);
       this.beatIndex += 1;
       this.nextBeatTime += this.intervalMs; // re-read interval ⇒ instant re-rate
     }
-    this.scheduledUpTo = horizon;
   }
 
   /**
-   * STUB: hand an absolute-timestamped beat to the native sample-accurate
-   * audio engine. Replaced by the native bridge in a later milestone.
+   * Stub kept for parity with the native engine's sample-accurate enqueue;
+   * the real audio path lives in modules/cadence-audio.
    */
   private enqueueBeat(_beatIndex: number, _atMs: number) {
-    // no-op in the UI build
+    // no-op: this JS fallback only fires visual beat callbacks
   }
 }

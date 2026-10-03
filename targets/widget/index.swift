@@ -103,21 +103,28 @@ private struct ControlLabel: View {
 private struct LockScreenView: View {
   let state: DriftlessActivityAttributes.ContentState
 
+  /// Outside a structured workout JS pushes phaseName "" / endTimeMs 0
+  /// (epoch 0); mirrors Android's `endTimeMs > 0` check so we never render a
+  /// dangling "Driftless ·" separator or a fake 0:00 countdown.
+  private var hasCountdown: Bool { state.endTime.timeIntervalSince1970 > 1 }
+
   var body: some View {
     VStack(spacing: 14) {
       HStack {
         HStack(spacing: 9) {
           LogoChip()
-          Text("Driftless · \(state.phaseName)")
+          Text(state.phaseName.isEmpty ? "Driftless" : "Driftless · \(state.phaseName)")
             .font(.system(size: 14, weight: .bold))
             .foregroundStyle(Color.warmInk)
         }
         Spacer()
-        HStack(spacing: 4) {
-          Text(state.remainingLabel).font(.system(size: 12)).foregroundStyle(Color.warmMuted)
-          countdownText(state.endTime)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Color.warmMuted)
+        if hasCountdown {
+          HStack(spacing: 4) {
+            Text(state.remainingLabel).font(.system(size: 12)).foregroundStyle(Color.warmMuted)
+            countdownText(state.endTime)
+              .font(.system(size: 13, weight: .semibold))
+              .foregroundStyle(Color.warmMuted)
+          }
         }
       }
 

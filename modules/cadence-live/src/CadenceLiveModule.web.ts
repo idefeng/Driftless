@@ -12,4 +12,4 @@ class CadenceLiveModule extends NativeModule<CadenceLiveModuleEvents> {
   stop(): void {}
 }
 
-export default registerWebModule(CadenceLiveModule, 'CadenceLiveModule');
+export default registerWebModule(CadenceLiveModule, 'CadenceLive');

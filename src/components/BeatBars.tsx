@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useCadence } from '../state/CadenceContext';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -11,9 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 /**
- * BeatBars — Driftless's signature "跟拍跳动的脉冲波形": equidistant bars that
- * scale on the Y axis in a staggered wave. Precise & rhythmic, never random.
- * Mirrors the `beatBar` keyframe from the design prototype.
+ * BeatBars 2.0 — Driftless's signature "跟拍跳动的脉冲波形 + 真实流体光环涟漪":
+ * Equidistant bars scaling on Y axis with background radial pulse aura.
  */
 
 interface BeatBarsProps {
@@ -24,12 +24,64 @@ interface BeatBarsProps {
   delays?: number[];
   color: string;
   centerColor?: string;
+  /** 一个完整脉冲周期的毫秒数；缺省时跟随当前 BPM（60000/bpm）。 */
   periodMs?: number;
   running?: boolean;
   radius?: number;
+  showHalo?: boolean;
 }
 
 const DEFAULT_DELAYS = [0, 0.1, 0.2, 0.3, 0.2, 0.1, 0];
+
+function HaloPulse({
+  periodMs,
+  running,
+  color,
+}: {
+  periodMs: number;
+  running: boolean;
+  color: string;
+}) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    cancelAnimation(progress);
+    if (running) {
+      progress.value = 0;
+      progress.value = withRepeat(
+        withTiming(1, { duration: periodMs, easing: Easing.out(Easing.quad) }),
+        -1,
+        false,
+      );
+    } else {
+      progress.value = 0;
+    }
+    return () => cancelAnimation(progress);
+  }, [periodMs, running, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = 0.8 + 0.6 * progress.value;
+    const opacity = (1 - progress.value) * 0.45;
+    return {
+      transform: [{ scale }],
+      opacity: running ? opacity : 0,
+    };
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.halo,
+        {
+          borderColor: color,
+          backgroundColor: color,
+        },
+        animatedStyle,
+      ]}
+    />
+  );
+}
 
 function Bar({
   delay,
@@ -62,7 +114,6 @@ function Bar({
   }, [delay, periodMs, running, t]);
 
   const animatedStyle = useAnimatedStyle(() => {
-    // 0 → scaleY .32 / opacity .4 ; 1 → scaleY 1 / opacity 1
     const scaleY = 0.32 + 0.68 * t.value;
     const opacity = 0.4 + 0.6 * t.value;
     return { transform: [{ scaleY }], opacity };
@@ -78,34 +129,54 @@ export function BeatBars({
   delays = DEFAULT_DELAYS,
   color,
   centerColor,
-  periodMs = 1050,
+  periodMs,
   running = true,
   radius = 4,
+  showHalo = true,
 }: BeatBarsProps) {
+  const { bpm } = useCadence();
+  const period = periodMs ?? Math.round(60000 / bpm);
   const center = Math.floor(delays.length / 2);
+
   return (
-    <View style={[styles.row, { height, gap }]}>
-      {delays.map((d, i) => (
-        <Bar
-          key={i}
-          delay={d}
-          periodMs={periodMs}
-          running={running}
-          style={{
-            width: barWidth,
-            height,
-            borderRadius: radius,
-            backgroundColor: i === center && centerColor ? centerColor : color,
-          }}
-        />
-      ))}
+    <View style={[styles.container, { height }]}>
+      {showHalo && <HaloPulse periodMs={period} running={running} color={centerColor || color} />}
+      <View style={[styles.row, { height, gap }]}>
+        {delays.map((d, i) => (
+          <Bar
+            key={i}
+            delay={d}
+            periodMs={period}
+            running={running}
+            style={{
+              width: barWidth,
+              height,
+              borderRadius: radius,
+              backgroundColor: i === center && centerColor ? centerColor : color,
+            }}
+          />
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    zIndex: 2,
+  },
+  halo: {
+    position: 'absolute',
+    width: 140,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 1.5,
+    zIndex: 1,
   },
 });

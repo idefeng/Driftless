@@ -32,10 +32,24 @@ export function Chip({
 }
 
 // ── Toggle switch ──────────────────────────────────────────────────────
-export function Toggle({ value, onChange }: { value: boolean; onChange?: (v: boolean) => void }) {
+export function Toggle({
+  value,
+  onChange,
+  label,
+}: {
+  value: boolean;
+  onChange?: (v: boolean) => void;
+  label?: string;
+}) {
   const { c } = useTheme();
   return (
-    <Pressable onPress={() => onChange?.(!value)} hitSlop={8}>
+    <Pressable
+      onPress={() => onChange?.(!value)}
+      hitSlop={8}
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: value }}
+    >
       <View
         style={[
           styles.track,
@@ -53,14 +67,16 @@ export function RoundIconButton({
   onPress,
   children,
   size = 38,
+  label,
 }: {
   onPress?: () => void;
   children: React.ReactNode;
   size?: number;
+  label?: string;
 }) {
   const { c, isDark } = useTheme();
   return (
-    <Pressable onPress={onPress} hitSlop={8}>
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" accessibilityLabel={label}>
       <View
         style={[
           styles.roundBtn,

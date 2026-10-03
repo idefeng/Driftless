@@ -4,14 +4,19 @@ import { useRouter } from 'expo-router';
 import { RoundIconButton, BackIcon } from './ui';
 import { fonts } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 
 export function SubHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   const { c } = useTheme();
+  const { t } = useI18n();
   const router = useRouter();
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <RoundIconButton onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}>
+        <RoundIconButton
+          label={t('a11y.back')}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        >
           <BackIcon />
         </RoundIconButton>
         <Text style={[styles.title, { color: c.text }]}>{title}</Text>

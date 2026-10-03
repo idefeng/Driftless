@@ -25,6 +25,8 @@ const KEEP_AWAKE_TAG = 'driftless-cadence';
 // crashing on it.
 const STORAGE_KEY = 'driftless.cadence.v1';
 const PERSIST_DEBOUNCE_MS = 400;
+// 锁屏推送（Live Activity / 前台通知）节流：长按 ±1 连续步进时不会每步都推原生。
+const LIVE_UPDATE_DEBOUNCE_MS = 400;
 
 export type SoundId = 'beep' | 'woodfish' | 'click' | 'bubble' | 'droplet';
 export type CoexistMode = 'mix' | 'exclusive';
@@ -93,7 +95,8 @@ interface CadenceState {
   // running session
   running: boolean;
   phaseIndex: number;
-  phaseRemainingSec: number;
+  /** 当前阶段结束的绝对时间戳（ms），仅 running 时有效；秒级倒计时由 running 页本地推导。 */
+  phaseEndAtMs: number;
   /** true when real audio output is wired (native or web), false in Expo Go. */
   audioReady: boolean;
 }
@@ -109,6 +112,7 @@ interface CadenceApi extends CadenceState {
   setKeepAwake: (b: boolean) => void;
   setActivePlanId: (id: string) => void;
   createPlan: () => string;
+  importPlan: (importedPlan: { name: string; phases: Array<{ name: string; durationSec: number; bpm: number }> }) => string;
   renamePlan: (id: string, name: string) => void;
   deletePlan: (id: string) => void;
   startWorkout: () => void;
@@ -179,10 +183,14 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
 
   const [running, setRunning] = useState(false);
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [phaseRemainingSec, setPhaseRemainingSec] = useState(0);
+  // 当前阶段结束的绝对时间戳（ms）。只在阶段切换/暂停恢复时变化，
+  // 秒级倒计时移出共享 context（running 页本地推导），避免每秒重建 context value。
+  const [phaseEndAtMs, setPhaseEndAtMs] = useState(0);
 
   // Absolute end time of the current phase — drives native lock-screen countdowns.
   const phaseEndRef = useRef(0);
+  // 暂停时冻结的剩余秒数；恢复播放时据此重建 phaseEndRef。
+  const pausedRemainingRef = useRef<number | null>(null);
 
   const setBpm = useCallback(
     (n: number) => {
@@ -204,14 +212,46 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     [engine],
   );
 
+  // Android 13+ 需要运行时通知授权，前台服务卡片才能正常显示。
+  // 延迟到首次播放/开始训练时再请求，避免 App 一启动就弹权限框。
+  const notifPermissionRequestedRef = useRef(false);
+  const requestNotificationPermission = useCallback(() => {
+    if (notifPermissionRequestedRef.current) return;
+    notifPermissionRequestedRef.current = true;
+    if (Platform.OS === 'android' && Platform.Version >= 33) {
+      void PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      ).catch((error) => {
+        logger.warn('通知权限请求失败。', error);
+      });
+    }
+  }, []);
+
+  // 暂停播放：停引擎，并冻结训练倒计时（记住剩余秒数，恢复时按绝对时间戳重建）。
+  // 耳机拔出/蓝牙断开等系统打断（onInterrupted）也走同一路径。
+  const pausePlayback = useCallback(() => {
+    if (running) {
+      pausedRemainingRef.current = Math.max(0, Math.ceil((phaseEndRef.current - Date.now()) / 1000));
+    }
+    engine.stop();
+    setIsPlaying(false);
+  }, [engine, running]);
+
   const togglePlay = useCallback(() => {
-    setIsPlaying((prev) => {
-      const next = !prev;
-      if (next) engine.start(bpm);
-      else engine.stop();
-      return next;
-    });
-  }, [engine, bpm]);
+    if (isPlaying) {
+      pausePlayback();
+      return;
+    }
+    if (running && pausedRemainingRef.current != null) {
+      // 恢复播放：用暂停时冻结的剩余秒数重建绝对结束时间。
+      phaseEndRef.current = Date.now() + pausedRemainingRef.current * 1000;
+      setPhaseEndAtMs(phaseEndRef.current);
+      pausedRemainingRef.current = null;
+    }
+    requestNotificationPermission();
+    engine.start(bpm);
+    setIsPlaying(true);
+  }, [isPlaying, running, engine, bpm, pausePlayback, requestNotificationPermission]);
 
   const setSound = useCallback(
     (s: SoundId) => {
@@ -257,8 +297,8 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     !!p &&
     typeof (p as PlanPhase).id === 'string' &&
     typeof (p as PlanPhase).name === 'string' &&
-    typeof (p as PlanPhase).durationSec === 'number' &&
-    typeof (p as PlanPhase).bpm === 'number' &&
+    Number.isFinite((p as PlanPhase).durationSec) &&
+    Number.isFinite((p as PlanPhase).bpm) &&
     typeof (p as PlanPhase).color === 'string';
   const isValidPlan = (p: unknown): p is TrainingPlan =>
     !!p &&
@@ -274,16 +314,25 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const saved = JSON.parse(raw);
-          if (typeof saved.bpm === 'number') setBpm(saved.bpm);
+          if (Number.isFinite(saved.bpm)) setBpm(saved.bpm);
           if (isValidSound(saved.sound)) setSound(saved.sound);
           if (saved.coexist === 'mix' || saved.coexist === 'exclusive') {
             setCoexist(saved.coexist);
           }
-          if (typeof saved.beatVolume === 'number') setBeatVolume(saved.beatVolume);
+          if (Number.isFinite(saved.beatVolume)) setBeatVolume(saved.beatVolume);
           if (typeof saved.ducking === 'boolean') setDucking(saved.ducking);
           if (typeof saved.keepAwake === 'boolean') setKeepAwake(saved.keepAwake);
           if (Array.isArray(saved.plans) && saved.plans.length > 0 && saved.plans.every(isValidPlan)) {
-            setPlans(saved.plans);
+            // 旧版本/异常数据可能存有越界数值，水合时统一钳制到合法范围。
+            const sanitizedPlans = (saved.plans as TrainingPlan[]).map((p) => ({
+              ...p,
+              phases: p.phases.map((ph) => ({
+                ...ph,
+                bpm: clampBpm(ph.bpm),
+                durationSec: Math.min(3600, Math.max(30, Math.round(ph.durationSec))),
+              })),
+            }));
+            setPlans(sanitizedPlans);
             if (typeof saved.activePlanId === 'string') setActivePlanId(saved.activePlanId);
           }
         }
@@ -323,15 +372,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [keepAwake, isPlaying]);
 
-  // Android 13+ 需要运行时通知授权，前台服务卡片才能正常显示。
+  // 冷启动恒为暂停态：清理上次进程被杀残留的锁屏展示（Live Activity / 前台通知）。
   useEffect(() => {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      void PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      ).catch((error) => {
-        logger.warn('通知权限请求失败。', error);
-      });
-    }
+    CadenceLive.stop();
   }, []);
 
   // Initialize the engine once.
@@ -350,41 +393,55 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   // back via "onInterrupted" — otherwise the play button and lock-screen
   // notification would keep showing "playing" while the beat is actually silent.
   useEffect(() => {
-    const sub = CadenceAudio.addInterruptedListener(() => setIsPlaying(false));
+    const sub = CadenceAudio.addInterruptedListener(pausePlayback);
     return () => sub?.remove();
-  }, []);
+  }, [pausePlayback]);
 
   // ── Workout session ──────────────────────────────────────────────
   const startWorkout = useCallback(() => {
-    phaseEndRef.current = Date.now() + plan[0].durationSec * 1000;
+    const first = plan[0];
+    const firstBpm = clampBpm(first.bpm);
+    pausedRemainingRef.current = null;
+    phaseEndRef.current = Date.now() + first.durationSec * 1000;
+    setPhaseEndAtMs(phaseEndRef.current);
     setRunning(true);
     setPhaseIndex(0);
-    setPhaseRemainingSec(plan[0].durationSec);
-    setBpmState(plan[0].bpm);
+    setBpmState(firstBpm);
     setIsPlaying(true);
-    engine.setBpm(plan[0].bpm);
-    engine.start(plan[0].bpm);
-  }, [plan, engine]);
+    requestNotificationPermission();
+    engine.setBpm(firstBpm);
+    engine.start(firstBpm);
+  }, [plan, engine, requestNotificationPermission]);
 
   const stopWorkout = useCallback(() => {
+    pausedRemainingRef.current = null;
+    setPhaseEndAtMs(0);
     setRunning(false);
-  }, []);
+    engine.stop();
+    setIsPlaying(false);
+  }, [engine]);
 
+  // 普通函数而非 setState updater：写 ref、engine.setBpm 等副作用移出 updater，
+  // 避免并发渲染下被重复执行。变速遵循 PRD §3.4「自然完成，瞬时变速」。
   const advancePhase = useCallback(() => {
-    setPhaseIndex((idx) => {
-      const next = idx + 1;
-      if (next >= plan.length) {
-        setRunning(false);
-        return idx;
-      }
-      phaseEndRef.current = Date.now() + plan[next].durationSec * 1000;
-      setPhaseRemainingSec(plan[next].durationSec);
-      // "Natural finish, instant re-rate" — switch the rate at the boundary.
-      setBpmState(plan[next].bpm);
-      engine.setBpm(plan[next].bpm);
-      return next;
-    });
-  }, [plan, engine]);
+    const next = phaseIndex + 1;
+    if (next >= plan.length) {
+      // 训练自然结束：停引擎、退出播放态；running 页监听 running 变 false 后自动退出。
+      pausedRemainingRef.current = null;
+      setPhaseEndAtMs(0);
+      setRunning(false);
+      engine.stop();
+      setIsPlaying(false);
+      return;
+    }
+    phaseEndRef.current = Date.now() + plan[next].durationSec * 1000;
+    setPhaseEndAtMs(phaseEndRef.current);
+    // 若当前处于暂停，切到下一阶段后按新阶段时长冻结剩余时间。
+    pausedRemainingRef.current = plan[next].durationSec;
+    setPhaseIndex(next);
+    setBpmState(plan[next].bpm);
+    engine.setBpm(plan[next].bpm);
+  }, [plan, engine, phaseIndex]);
 
   const skipPhase = useCallback(() => advancePhase(), [advancePhase]);
 
@@ -408,6 +465,31 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     setActivePlanId(id);
     return id;
   }, [t, plans.length]);
+
+  const importPlan = useCallback(
+    (importedPlan: { name: string; phases: Array<{ name: string; durationSec: number; bpm: number }> }) => {
+      const newId = `plan_${Date.now()}`;
+      const palette = [brand.light, brand.base, brand.deep];
+      const newPlan: TrainingPlan = {
+        id: newId,
+        name: importedPlan.name || t('plan.defaultName', { number: plans.length + 1 }),
+        phases: (importedPlan.phases && importedPlan.phases.length > 0
+          ? importedPlan.phases
+          : [{ name: t('plan.defaultPhase', { number: 1 }), durationSec: 20 * 60, bpm: 180 }]
+        ).map((ph, idx) => ({
+          id: `p_${Date.now()}_${idx}`,
+          name: ph.name || `Phase ${idx + 1}`,
+          durationSec: Math.max(10, ph.durationSec || 300),
+          bpm: clampBpm(ph.bpm || 180),
+          color: palette[idx % palette.length],
+        })),
+      };
+      setPlans((prev) => [...prev, newPlan]);
+      setActivePlanId(newId);
+      return newId;
+    },
+    [t, plans.length],
+  );
 
   const renamePlan = useCallback((id: string, name: string) => {
     setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
@@ -493,33 +575,37 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   // During a workout: show the phase, its index, and a live countdown. On the
   // home screen (free metronome): just the rate — phaseCount 1 tells the native
   // surface to drop the "第 x/n 段" line and the skip control, no countdown.
-  liveStateRef.current = running
-    ? {
-        bpm,
-        phaseName: (plan[phaseIndex] ?? plan[0]).name,
-        phaseIndex,
-        phaseCount: plan.length,
-        endTimeMs: phaseEndRef.current,
-        running: true,
-        phaseProgressText: t('live.phaseProgress', { current: phaseIndex + 1, total: plan.length }),
-        remainingLabel: t('live.remaining'),
-        skipActionLabel: t('live.skipPhase'),
-        channelName: t('live.channelName'),
-        channelDescription: t('live.channelDescription'),
-      }
-    : {
-        bpm,
-        phaseName: '',
-        phaseIndex: 0,
-        phaseCount: 1,
-        endTimeMs: 0,
-        running: isPlaying,
-        phaseProgressText: '',
-        remainingLabel: t('live.remaining'),
-        skipActionLabel: t('live.skipPhase'),
-        channelName: t('live.channelName'),
-        channelDescription: t('live.channelDescription'),
-      };
+  // 渲染期不直接写 ref——放进 effect（声明在下方 start/update effect 之前，
+  // 保证它们读到的是最新快照）。
+  useEffect(() => {
+    liveStateRef.current = running
+      ? {
+          bpm,
+          phaseName: (plan[phaseIndex] ?? plan[0]).name,
+          phaseIndex,
+          phaseCount: plan.length,
+          endTimeMs: phaseEndRef.current,
+          running: true,
+          phaseProgressText: t('live.phaseProgress', { current: phaseIndex + 1, total: plan.length }),
+          remainingLabel: t('live.remaining'),
+          skipActionLabel: t('live.skipPhase'),
+          channelName: t('live.channelName'),
+          channelDescription: t('live.channelDescription'),
+        }
+      : {
+          bpm,
+          phaseName: '',
+          phaseIndex: 0,
+          phaseCount: 1,
+          endTimeMs: 0,
+          running: isPlaying,
+          phaseProgressText: '',
+          remainingLabel: t('live.remaining'),
+          skipActionLabel: t('live.skipPhase'),
+          channelName: t('live.channelName'),
+          channelDescription: t('live.channelDescription'),
+        };
+  });
 
   // Lock-screen ±1 / skip controls feed back into cadence state.
   useEffect(() => {
@@ -540,26 +626,24 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
   }, [isPlaying]);
 
   // Push fresh content when the rate or phase changes (iOS counts the timer down
-  // natively from endTimeMs, so per-second updates aren't needed).
+  // natively from endTimeMs, so per-second updates aren't needed). Debounced so
+  // long-press ±1 stepping doesn't push to native on every tick.
   useEffect(() => {
-    if (isPlaying) CadenceLive.update(liveStateRef.current);
+    if (!isPlaying) return;
+    const timer = setTimeout(() => CadenceLive.update(liveStateRef.current), LIVE_UPDATE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bpm, phaseIndex, running, isPlaying, t]);
 
-  // running countdown
+  // 训练倒计时：唯一时间源是 phaseEndRef 的绝对时间戳（不随渲染/节流漂移），
+  // 且只在播放中推进——暂停或系统打断时阶段计时冻结（见 pausePlayback）。
   useEffect(() => {
-    if (!running) return;
-    const t = setInterval(() => {
-      setPhaseRemainingSec((s) => {
-        if (s <= 1) {
-          advancePhase();
-          return 0;
-        }
-        return s - 1;
-      });
+    if (!running || !isPlaying) return;
+    const timer = setInterval(() => {
+      if (Date.now() >= phaseEndRef.current) advancePhase();
     }, 1000);
-    return () => clearInterval(t);
-  }, [running, advancePhase]);
+    return () => clearInterval(timer);
+  }, [running, isPlaying, advancePhase]);
 
   const value = useMemo<CadenceApi>(
     () => ({
@@ -575,7 +659,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       plan,
       running,
       phaseIndex,
-      phaseRemainingSec,
+      phaseEndAtMs,
       audioReady,
       setBpm,
       step,
@@ -587,6 +671,7 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
       setKeepAwake,
       setActivePlanId,
       createPlan,
+      importPlan,
       renamePlan,
       deletePlan,
       startWorkout,
@@ -598,9 +683,9 @@ export function CadenceProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       bpm, isPlaying, sound, coexist, beatVolume, ducking, keepAwake, plans,
-      activePlanId, plan, running, phaseIndex, phaseRemainingSec, audioReady,
+      activePlanId, plan, running, phaseIndex, phaseEndAtMs, audioReady,
       setBpm, step, togglePlay, setSound, setCoexist, setBeatVolume, setDucking,
-      createPlan, renamePlan, deletePlan, startWorkout,
+      createPlan, importPlan, renamePlan, deletePlan, startWorkout,
       stopWorkout, skipPhase, addPhase, removePhase, updatePhase,
     ],
   );

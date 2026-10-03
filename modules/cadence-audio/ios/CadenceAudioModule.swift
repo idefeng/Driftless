@@ -47,14 +47,12 @@ public class CadenceAudioModule: Module {
   private var mixWithOthers = true
   private var ducking = false
 
-  private var beatTimer: DispatchSourceTimer?
-  private var lastEmittedBeat = 0
   private var wasRunningBeforeInterruption = false
 
   public func definition() -> ModuleDefinition {
     Name("CadenceAudio")
 
-    Events("onBeat")
+    Events("onBeat", "onInterrupted")
 
     Property("isRunning") { [weak self] () -> Bool in
       return self?.rt.running ?? false
@@ -69,13 +67,12 @@ public class CadenceAudioModule: Module {
       if !self.prepared { self.prepare(mix: self.mixWithOthers) }
       self.rt.samplesUntilNextBeat = 0 // fire the first beat immediately
       self.rt.beatCounter = 0
-      self.lastEmittedBeat = 0
       self.rt.running = true
       self.ensureEngineRunning()
     }
 
     Function("stop") {
-      self.rt.running = false
+      self.stopPlayback()
     }
 
     Function("setBpm") { (bpm: Double) in
@@ -120,7 +117,10 @@ public class CadenceAudioModule: Module {
       options = ducking ? [.duckOthers] : [.mixWithOthers]
     }
     try session.setCategory(.playback, mode: .default, options: options)
-    try session.setActive(true)
+    // Deliberately no setActive(true) here: prepare() runs at app launch and
+    // must not grab the session (exclusive mode would cut off other apps'
+    // music before the user presses play). Activation happens in
+    // ensureEngineRunning(), deactivation in stopPlayback().
     sampleRate = session.sampleRate
   }
 
@@ -195,8 +195,7 @@ public class CadenceAudioModule: Module {
     engine.connect(node, to: engine.mainMixerNode, format: format)
     engine.prepare()
 
-    registerInterruptionObserver()
-    startBeatTimer()
+    registerSessionObservers()
     prepared = true
   }
 
@@ -254,31 +253,31 @@ public class CadenceAudioModule: Module {
     return data
   }
 
-  // MARK: - Beat events (off the realtime thread)
+  // MARK: - Playback control
 
-  private func startBeatTimer() {
-    let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .userInitiated))
-    timer.schedule(deadline: .now(), repeating: .milliseconds(30))
-    timer.setEventHandler { [weak self] in
-      guard let self = self else { return }
-      let c = self.rt.beatCounter
-      if c != self.lastEmittedBeat {
-        self.lastEmittedBeat = c
-        self.sendEvent("onBeat", ["beatIndex": c])
-      }
-    }
-    timer.resume()
-    beatTimer = timer
+  /// Pause the engine and release the audio session so other apps' audio can
+  /// resume. Used by stop() and by route changes we pause for ourselves.
+  private func stopPlayback() {
+    rt.running = false
+    engine.pause()
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 
-  // MARK: - Interruptions (PRD §4.1 — real interruptions pause)
+  // MARK: - Interruptions & route changes (PRD §4.1 — real interruptions pause)
 
-  private func registerInterruptionObserver() {
+  private func registerSessionObservers() {
+    let session = AVAudioSession.sharedInstance()
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(handleInterruption(_:)),
       name: AVAudioSession.interruptionNotification,
-      object: AVAudioSession.sharedInstance()
+      object: session
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(handleRouteChange(_:)),
+      name: AVAudioSession.routeChangeNotification,
+      object: session
     )
   }
 
@@ -291,6 +290,12 @@ public class CadenceAudioModule: Module {
       wasRunningBeforeInterruption = rt.running
       rt.running = false
       engine.pause()
+      // JS didn't initiate this stop — tell it so the play button / lock-screen
+      // UI stays in sync (same contract as Android's onInterrupted). The system
+      // owns the session during the interruption, so no setActive(false) here.
+      if wasRunningBeforeInterruption {
+        sendEvent("onInterrupted", ["reason": "interrupted"])
+      }
     case .ended:
       let shouldResume: Bool
       if let optRaw = info[AVAudioSessionInterruptionOptionKey] as? UInt {
@@ -307,11 +312,23 @@ public class CadenceAudioModule: Module {
     }
   }
 
+  /// Headphone unplug / Bluetooth disconnect (PRD §4.1 — default pause, avoid
+  /// suddenly blasting through the speaker). Mirrors Android's
+  /// ACTION_AUDIO_BECOMING_NOISY handling, including the event payload.
+  @objc private func handleRouteChange(_ note: Notification) {
+    guard let info = note.userInfo,
+          let raw = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
+          let reason = AVAudioSession.RouteChangeReason(rawValue: raw),
+          reason == .oldDeviceUnavailable,
+          rt.running else { return }
+    wasRunningBeforeInterruption = false
+    stopPlayback()
+    sendEvent("onInterrupted", ["reason": "routeChanged"])
+  }
+
   // MARK: - Teardown
 
   private func teardown() {
-    beatTimer?.cancel()
-    beatTimer = nil
     NotificationCenter.default.removeObserver(self)
     if engine.isRunning { engine.stop() }
     for ptr in rt.bufPtrs { ptr.deallocate() }

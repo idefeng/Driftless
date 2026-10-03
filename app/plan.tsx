@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,20 +9,22 @@ import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
 import { useCadence, formatClock } from '../src/state/CadenceContext';
 import { useI18n } from '../src/i18n/I18nContext';
+import { PlanShareModal } from '../src/components/PlanShareModal';
 
 // Keeps the plan name short enough that the Home chip never has to truncate it.
 const PLAN_NAME_MAX_LENGTH = 6;
 
 export default function Plan() {
   const { c, isDark } = useTheme();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const router = useRouter();
   const { plans, activePlanId, renamePlan, plan, startWorkout, addPhase, removePhase, updatePhase } = useCadence();
   const activePlan = plans.find((p) => p.id === activePlanId) ?? plans[0];
 
+  const [shareVisible, setShareVisible] = useState(false);
+
   const totalSec = plan.reduce((a, p) => a + p.durationSec, 0);
-  const avg = Math.round(plan.reduce((a, p) => a + p.bpm * p.durationSec, 0) / totalSec);
-  const activeIdx = 1; // 巡航 highlighted in the design
+  const avg = Math.round(plan.reduce((a, p) => a + p.bpm * p.durationSec, 0) / (totalSec || 1));
 
   const onStart = () => {
     startWorkout();
@@ -34,14 +36,25 @@ export default function Plan() {
       <SubHeader title={t('plan.title')} subtitle={t('plan.subtitle')} />
 
       <ScrollView contentContainerStyle={{ padding: 18, paddingTop: 20 }} showsVerticalScrollIndicator={false}>
-        <TextInput
-          value={activePlan.name}
-          onChangeText={(text) => renamePlan(activePlan.id, text)}
-          placeholder={t('plan.namePlaceholder')}
-          placeholderTextColor={c.textFaint}
-          maxLength={PLAN_NAME_MAX_LENGTH}
-          style={[styles.planName, { color: c.text, borderBottomColor: c.divider }]}
-        />
+        <View style={styles.nameHeaderRow}>
+          <TextInput
+            value={activePlan.name}
+            onChangeText={(text) => renamePlan(activePlan.id, text)}
+            placeholder={t('plan.namePlaceholder')}
+            placeholderTextColor={c.textFaint}
+            maxLength={PLAN_NAME_MAX_LENGTH}
+            style={[styles.planName, { color: c.text, borderBottomColor: c.divider }]}
+          />
+          <Pressable
+            style={[styles.shareBadge, { backgroundColor: c.chipAccent }]}
+            onPress={() => setShareVisible(true)}
+          >
+            <Text style={[styles.shareText, { color: c.brandText }]}>
+              {language === 'zh' ? 'QR 导出' : 'Export'}
+            </Text>
+          </Pressable>
+        </View>
+
         <Text
           style={[
             styles.planNameCounter,
@@ -52,20 +65,21 @@ export default function Plan() {
         </Text>
 
         {plan.map((p, i) => {
-          const active = i === activeIdx;
           return (
             <View key={p.id}>
               <Pressable
                 onLongPress={() => removePhase(p.id)}
                 delayLongPress={400}
+                accessibilityRole="button"
+                accessibilityLabel={p.name}
                 style={[
                   styles.phase,
                   {
                     backgroundColor: c.card,
-                    borderColor: active ? brand.base : 'transparent',
+                    borderColor: 'transparent',
                     borderWidth: 2,
-                    shadowOpacity: active ? 0.14 : isDark ? 0 : 0.05,
-                    shadowColor: active ? brand.deep : '#000',
+                    shadowOpacity: isDark ? 0 : 0.05,
+                    shadowColor: '#000',
                   },
                 ]}
               >
@@ -125,6 +139,8 @@ export default function Plan() {
 
         <Pressable
           onPress={addPhase}
+          accessibilityRole="button"
+          accessibilityLabel={t('plan.addPhase')}
           style={({ pressed }) => [
             styles.addPhase,
             { borderColor: isDark ? '#3A3328' : '#D8D1C6', opacity: pressed ? 0.6 : 1 },
@@ -145,7 +161,7 @@ export default function Plan() {
           </Text>
           <Text style={[styles.summaryText, { color: c.textFaint }]}>{t('plan.average', { avg })}</Text>
         </View>
-        <Pressable onPress={onStart}>
+        <Pressable onPress={onStart} accessibilityRole="button" accessibilityLabel={t('plan.start')}>
           <LinearGradient
             colors={[brand.glow, brand.deep]}
             start={{ x: 0.15, y: 0 }}
@@ -157,16 +173,38 @@ export default function Plan() {
           </LinearGradient>
         </Pressable>
       </View>
+
+      <PlanShareModal
+        plan={activePlan}
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  nameHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   planName: {
+    flex: 1,
     fontFamily: fonts.displayBold,
     fontSize: 22,
     borderBottomWidth: 1,
     paddingBottom: 6,
+  },
+  shareBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  shareText: {
+    fontFamily: fonts.bodyBold,
+    fontSize: 12,
   },
   planNameCounter: {
     fontFamily: fonts.bodyMedium,

@@ -54,6 +54,8 @@ class CadenceLiveService : Service() {
   private var skipActionLabel = "Skip phase"
   private var channelName = "Run cadence"
   private var channelDescription = "Active cadence and controls"
+  // 只在收到过 START/UPDATE（即存在真实会话状态）后才允许弹出前台通知。
+  private var started = false
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -63,16 +65,29 @@ class CadenceLiveService : Service() {
       ACTION_DEC -> actionListener?.invoke("dec")
       ACTION_SKIP -> actionListener?.invoke("skip")
       ACTION_STOP -> {
+        started = false
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
         return START_NOT_STICKY
       }
-      else -> readState(intent)
+      ACTION_START, ACTION_UPDATE -> {
+        readState(intent)
+        started = true
+      }
+      else -> {
+        // intent 为 null（进程被杀后系统重启服务）或未知 action：没有任何会话
+        // 状态，此时 startForeground 会用字段默认值（bpm=180）冒出“幽灵通知”，
+        // 直接停止服务。配合 START_NOT_STICKY，系统本就不会再空重启我们。
+        stopSelf()
+        return START_NOT_STICKY
+      }
     }
 
-    // Refresh state from any extras carried by action intents too.
-    if (intent?.action == ACTION_INC || intent?.action == ACTION_DEC || intent?.action == ACTION_SKIP) {
-      readState(intent)
+    // 锁屏按钮（±1 / 跳过）只在会话进行中才有意义；服务若是在无会话状态下
+    // 被拉起的，不要为之弹通知。
+    if (!started) {
+      stopSelf()
+      return START_NOT_STICKY
     }
 
     ensureChannel()
@@ -85,7 +100,8 @@ class CadenceLiveService : Service() {
         ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
       else 0,
     )
-    return START_STICKY
+    // 不 STICKY：进程被杀后由 JS 侧重新 start，而不是系统以 null intent 拉起。
+    return START_NOT_STICKY
   }
 
   private fun readState(intent: Intent?) {

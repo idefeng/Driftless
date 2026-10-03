@@ -77,7 +77,7 @@ Expo Go（无原生模块）下回退到纯 JS 调度器（只动画、不发声
 
 App 使用 `expo-localization` 读取设备系统地区，不使用 GPS / IP / 定位权限。
 当前规则为：`CN`、`HK`、`MO`、`TW` 显示中文；其它地区显示英文。
-如果系统没有返回地区，但语言是中文，则兜底显示中文。
+如果系统没有返回地区，则一律默认英文（不按语言兜底中文）。
 
 文案集中在 `src/i18n/resources.ts`，页面通过 `useI18n()` 的 `t(key, params)`
 读取。训练阶段名仍可由用户编辑，默认阶段名和新增阶段名按当前语言生成。
@@ -85,7 +85,7 @@ App 使用 `expo-localization` 读取设备系统地区，不使用 GPS / IP / �
 ## OTA 更新
 
 Driftless 使用 `expo-updates` + EAS Update。`app.json` 中的
-`runtimeVersion.policy` 为 `appVersion`，当前 `1.0.1` 原生包只接收同一
+`runtimeVersion.policy` 为 `appVersion`，当前 `1.0.3` 原生包只接收同一
 runtime 的 JS / 资源更新。启动后和回到前台时，App 会检查 OTA；更新下载完成后
 提示用户重启，避免训练中被强制刷新。
 
@@ -129,7 +129,11 @@ pnpm exec expo run:ios      # 或 pnpm exec expo run:android
 - ✅ Android debug build 已在 USB 真机上完成构建、安装与启动验证
 - ⚠️ iOS 原生编译仍需配置 Apple Team ID 后再验证
 
-## 仍待接入（需各自的原生工作）
+## 已落地的系统能力
 
-Live Activities / 灵动岛、Android 前台服务常驻通知、屏幕常亮（expo-keep-awake）、
-物理音量键映射 —— 这些系统能力同样需在 development build 中以原生 / config plugin 落地。
+- **iOS Live Activities / 灵动岛**：由 `modules/cadence-live` + `targets/widget`
+  （WidgetKit + ActivityKit 扩展）驱动锁屏 / 灵动岛展示，支持锁屏 ±1 BPM 与跳过阶段。
+- **Android 前台服务常驻通知**：`modules/cadence-live` 的前台服务在训练中常驻通知栏，
+  同样支持 ±1 BPM 等快捷操作。
+- **屏幕常亮**：`expo-keep-awake` 已接入，仅在「常亮开启且播放中」时持有唤醒锁。
+- **物理音量键**：节拍走 `USAGE_MEDIA` 媒体音量通道，音量键可直接调节节拍音量。

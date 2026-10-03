@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
@@ -19,7 +19,13 @@ export default function Coexist() {
   const seg = (mode: CoexistMode, label: string) => {
     const active = coexist === mode;
     return (
-      <Pressable style={{ flex: 1 }} onPress={() => setCoexist(mode)}>
+      <Pressable
+        style={{ flex: 1 }}
+        onPress={() => setCoexist(mode)}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: active }}
+      >
         <View
           style={[
             styles.seg,
@@ -45,6 +51,14 @@ export default function Coexist() {
 
   const volPct = Math.round(beatVolume * 100);
   const isMix = coexist === 'mix';
+
+  // 音量轨道按点击位置换算音量：0–1，步进 0.05，与 ± 按钮粒度对齐。
+  const [trackWidth, setTrackWidth] = useState(0);
+  const setVolumeFromTap = (x: number) => {
+    if (trackWidth <= 0) return;
+    const ratio = Math.min(1, Math.max(0, x / trackWidth));
+    setBeatVolume(Math.round(ratio * 20) / 20);
+  };
 
   return (
     <Screen>
@@ -108,16 +122,35 @@ export default function Coexist() {
               <Text style={{ fontFamily: fonts.bodyBold, fontSize: 13, color: c.brandText }}>{volPct}%</Text>
             </View>
             <View style={styles.sliderTrack}>
-              <View style={[styles.sliderBg, { backgroundColor: c.trackInactive }]}>
-                <View style={[styles.sliderFill, { width: `${volPct}%`, backgroundColor: brand.base }]} />
-                <View style={[styles.sliderKnob, { left: `${volPct}%` }]} />
-              </View>
+              <Pressable
+                onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+                onPress={(e) => setVolumeFromTap(e.nativeEvent.locationX)}
+                hitSlop={12}
+                accessibilityRole="adjustable"
+                accessibilityLabel={t('coexist.volumeTitle')}
+                accessibilityValue={{ min: 0, max: 100, now: volPct, text: `${volPct}%` }}
+              >
+                <View style={[styles.sliderBg, { backgroundColor: c.trackInactive }]} pointerEvents="none">
+                  <View style={[styles.sliderFill, { width: `${volPct}%`, backgroundColor: brand.base }]} />
+                  <View style={[styles.sliderKnob, { left: `${volPct}%` }]} />
+                </View>
+              </Pressable>
             </View>
             <View style={styles.volBtns}>
-              <Pressable onPress={() => setBeatVolume(Math.max(0, beatVolume - 0.05))} style={[styles.volBtn, { borderColor: c.divider }]}>
+              <Pressable
+                onPress={() => setBeatVolume(Math.max(0, beatVolume - 0.05))}
+                style={[styles.volBtn, { borderColor: c.divider }]}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.volumeDecrease')}
+              >
                 <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>−</Text>
               </Pressable>
-              <Pressable onPress={() => setBeatVolume(Math.min(1, beatVolume + 0.05))} style={[styles.volBtn, { borderColor: c.divider }]}>
+              <Pressable
+                onPress={() => setBeatVolume(Math.min(1, beatVolume + 0.05))}
+                style={[styles.volBtn, { borderColor: c.divider }]}
+                accessibilityRole="button"
+                accessibilityLabel={t('a11y.volumeIncrease')}
+              >
                 <Text style={{ color: c.textMuted, fontFamily: fonts.bodyBold }}>＋</Text>
               </Pressable>
             </View>
@@ -129,7 +162,7 @@ export default function Coexist() {
               <Text style={[styles.rowTitle, { color: c.text }]}>{t('coexist.duckingTitle')}</Text>
               <Text style={[styles.rowSub, { color: c.textFaint }]}>{t('coexist.duckingSubtitle')}</Text>
             </View>
-            <Toggle value={ducking} onChange={setDucking} />
+            <Toggle value={ducking} onChange={setDucking} label={t('coexist.duckingTitle')} />
           </View>
 
           {/* keep awake */}
@@ -138,7 +171,7 @@ export default function Coexist() {
               <Text style={[styles.rowTitle, { color: c.text }]}>{t('coexist.keepAwakeTitle')}</Text>
               <Text style={[styles.rowSub, { color: c.textFaint }]}>{t('coexist.keepAwakeSubtitle')}</Text>
             </View>
-            <Toggle value={keepAwake} onChange={setKeepAwake} />
+            <Toggle value={keepAwake} onChange={setKeepAwake} label={t('coexist.keepAwakeTitle')} />
           </View>
         </View>
       </ScrollView>

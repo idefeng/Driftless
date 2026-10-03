@@ -26,6 +26,8 @@ class LiveSessionRecord : Record {
 
 class CadenceLiveModule : Module() {
   private val mainHandler = Handler(Looper.getMainLooper())
+  // 服务是否已被我们以 START/UPDATE 拉起；决定 update 用哪种方式下发。
+  private var serviceRunning = false
 
   override fun definition() = ModuleDefinition {
     Name("CadenceLive")
@@ -40,6 +42,7 @@ class CadenceLiveModule : Module() {
 
     OnDestroy {
       CadenceLiveService.actionListener = null
+      serviceRunning = false
       sendServiceIntent(CadenceLiveService.ACTION_STOP, null)
     }
 
@@ -49,14 +52,24 @@ class CadenceLiveModule : Module() {
     }
 
     Function("start") { state: LiveSessionRecord ->
+      serviceRunning = true
       startForegroundWith(CadenceLiveService.ACTION_START, state)
     }
 
     Function("update") { state: LiveSessionRecord ->
-      startForegroundWith(CadenceLiveService.ACTION_UPDATE, state)
+      if (serviceRunning) {
+        // 服务已是前台服务时，普通 startService 即可送达 UPDATE 并刷新通知。
+        // 从后台/锁屏（±1 按钮链路）调 startForegroundService 在 Android 12+
+        // 会抛 ForegroundServiceStartNotAllowedException。
+        sendServiceIntent(CadenceLiveService.ACTION_UPDATE, state)
+      } else {
+        serviceRunning = true
+        startForegroundWith(CadenceLiveService.ACTION_UPDATE, state)
+      }
     }
 
     Function("stop") {
+      serviceRunning = false
       sendServiceIntent(CadenceLiveService.ACTION_STOP, null)
     }
   }
@@ -84,7 +97,13 @@ class CadenceLiveModule : Module() {
   private fun startForegroundWith(action: String, s: LiveSessionRecord) {
     val ctx = appContext.reactContext ?: return
     val intent = intentFor(action, s) ?: return
-    ContextCompat.startForegroundService(ctx, intent)
+    try {
+      ContextCompat.startForegroundService(ctx, intent)
+    } catch (_: Exception) {
+      // 后台启动前台服务在 Android 12+ 会抛
+      // ForegroundServiceStartNotAllowedException；宁可丢一次通知也不崩溃。
+      serviceRunning = false
+    }
   }
 
   private fun sendServiceIntent(action: String, s: LiveSessionRecord?) {

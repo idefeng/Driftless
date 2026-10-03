@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { brand } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 
 interface PlayPauseButtonProps {
   playing: boolean;
@@ -53,13 +54,19 @@ function Ring({ size, delay, playing }: { size: number; delay: number; playing: 
 
 export function PlayPauseButton({ playing, onPress, size = 88 }: PlayPauseButtonProps) {
   const { c } = useTheme();
+  const { t } = useI18n();
   const barW = size * 0.09;
   const barH = size * 0.34;
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <Ring size={size} delay={0} playing={playing} />
       <Ring size={size} delay={750} playing={playing} />
-      <Pressable onPress={onPress} hitSlop={10}>
+      <Pressable
+        onPress={onPress}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={playing ? t('a11y.pause') : t('a11y.play')}
+      >
         <LinearGradient
           colors={[brand.glow, brand.deep]}
           start={{ x: 0.15, y: 0 }}

@@ -1,6 +1,6 @@
 {
   "name": "driftless-app",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "packageManager": "pnpm@10.32.1",
   "main": "expo-router/entry",
   "dependencies": {
@@ -15,6 +15,7 @@
     "expo-linear-gradient": "~56.0.4",
     "expo-linking": "~56.0.14",
     "expo-localization": "~56.0.6",
+    "expo-modules-core": "~56.0.17",
     "expo-router": "~56.2.11",
     "expo-splash-screen": "~56.0.10",
     "expo-status-bar": "~56.0.4",

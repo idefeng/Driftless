@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -29,6 +29,10 @@ void SplashScreen.preventAutoHideAsync().catch((error) => {
 });
 
 export default function RootLayout() {
+  // RootLayout 在 ThemeProvider 外层，直接用系统 scheme 取启动占位/栈背景色，
+  // 与 tokens 的 light.bg / dark.bg 保持一致，避免深色模式启动闪白。
+  const scheme = useColorScheme();
+  const bootBg = scheme === 'dark' ? '#141109' : '#F7F5F2';
   const [loaded] = useSora({
     Sora_400Regular,
     Sora_500Medium,
@@ -50,7 +54,7 @@ export default function RootLayout() {
     });
   }, [loaded]);
 
-  if (!loaded) return <View style={{ flex: 1, backgroundColor: '#F7F5F2' }} />;
+  if (!loaded) return <View style={{ flex: 1, backgroundColor: bootBg }} />;
 
   return (
     <SafeAreaProvider>
@@ -62,7 +66,7 @@ export default function RootLayout() {
               screenOptions={{
                 headerShown: false,
                 animation: 'slide_from_right',
-                contentStyle: { backgroundColor: '#F7F5F2' },
+                contentStyle: { backgroundColor: bootBg },
               }}
             >
               <Stack.Screen name="index" />

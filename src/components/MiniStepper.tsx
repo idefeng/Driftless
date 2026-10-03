@@ -1,7 +1,8 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { brand, fonts } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 
 /**
  * Compact −/＋ stepper for inline editing (e.g. a plan phase's cadence or
@@ -15,8 +16,9 @@ interface MiniStepperProps {
   onStep: (delta: number) => void;
 }
 
-function HoldButton({ sign, onStep }: { sign: '+' | '−'; onStep: (d: number) => void }) {
+function HoldButton({ sign, caption, onStep }: { sign: '+' | '−'; caption: string; onStep: (d: number) => void }) {
   const { c, isDark } = useTheme();
+  const { t } = useI18n();
   const delta = sign === '+' ? 1 : -1;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalMs = useRef(260);
@@ -28,6 +30,9 @@ function HoldButton({ sign, onStep }: { sign: '+' | '−'; onStep: (d: number) =
     timer.current = null;
     intervalMs.current = 260;
   }, []);
+
+  // 卸载时清掉长按连发计时器，避免泄漏。
+  useEffect(() => clear, [clear]);
 
   const repeat = useCallback(() => {
     if (!held.current) return;
@@ -47,6 +52,8 @@ function HoldButton({ sign, onStep }: { sign: '+' | '−'; onStep: (d: number) =
       onPressIn={onPressIn}
       onPressOut={clear}
       hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={t(sign === '+' ? 'a11y.increase' : 'a11y.decrease', { caption })}
       style={({ pressed }) => [
         styles.btn,
         {
@@ -64,12 +71,12 @@ export function MiniStepper({ value, caption, onStep }: MiniStepperProps) {
   const { c } = useTheme();
   return (
     <View style={styles.row}>
-      <HoldButton sign="−" onStep={onStep} />
+      <HoldButton sign="−" caption={caption} onStep={onStep} />
       <View style={styles.center}>
         <Text style={[styles.value, { color: c.text }]}>{value}</Text>
         <Text style={[styles.caption, { color: c.textFaint }]}>{caption}</Text>
       </View>
-      <HoldButton sign="+" onStep={onStep} />
+      <HoldButton sign="+" caption={caption} onStep={onStep} />
     </View>
   );
 }

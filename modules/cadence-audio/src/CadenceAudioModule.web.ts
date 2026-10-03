@@ -12,7 +12,9 @@ import { CadenceAudioModuleEvents, CadenceSoundId } from './CadenceAudio.types';
  * live BPM each beat, so there is no accumulating-timer drift.
  */
 
-const SCHEDULE_AHEAD = 0.12; // seconds of audio scheduled in advance
+// 后台标签页 setInterval 会被节流到 ≥1s，前瞻窗口必须大于该值否则必然欠载断拍；
+// 窗口大小只影响 setBpm 生效延迟（最迟一个窗口内生效），不影响节拍精度。
+const SCHEDULE_AHEAD = 1.2; // seconds of audio scheduled in advance
 const LOOKAHEAD_MS = 25; // how often the JS timer refills the window
 
 type ClickGrain = { freq: number; decay: number; dur: number; noise: number };
@@ -91,9 +93,6 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
     gain.gain.value = this.volume;
     src.connect(gain).connect(ctx.destination);
     src.start(at);
-    const idx = this.beatIndex;
-    const delayMs = Math.max(0, (at - ctx.currentTime) * 1000);
-    setTimeout(() => this.emit('onBeat', { beatIndex: idx }), delayMs);
   }
 
   private tick = () => {
@@ -110,11 +109,13 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
     this.ensureContext();
   }
 
-  start(bpm: number): void {
+  async start(bpm: number): Promise<void> {
     this.bpm = clampBpm(bpm);
     this.ensureContext();
     if (!this.ctx) return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    // 先等 AudioContext 真正恢复，再取 currentTime —— suspended 状态下
+    // currentTime 冻结为 0，提前调度会把前几拍排到过去被静默丢弃。
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
     if (this.running) return;
     this.running = true;
     this.beatIndex = 0;
@@ -127,6 +128,8 @@ class CadenceAudioModule extends NativeModule<CadenceAudioModuleEvents> {
     this.running = false;
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
+    // 暂停时钟以释放资源；下次 start 时再 resume。
+    if (this.ctx?.state === 'running') void this.ctx.suspend();
   }
 
   setBpm(bpm: number): void {
@@ -154,4 +157,4 @@ function clampBpm(b: number) {
   return Math.max(100, Math.min(250, Math.round(b)));
 }
 
-export default registerWebModule(CadenceAudioModule, 'CadenceAudioModule');
+export default registerWebModule(CadenceAudioModule, 'CadenceAudio');

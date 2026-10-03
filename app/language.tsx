@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Screen } from '../src/components/Screen';
 import { SubHeader } from '../src/components/SubHeader';
 import { CheckIcon } from '../src/components/ui';
 import { useTheme } from '../src/theme/ThemeContext';
 import { fonts, brand } from '../src/theme/tokens';
-import { useI18n, type LanguagePreference } from '../src/i18n/I18nContext';
+import { useI18n, LANGUAGE_PREF_STORAGE_KEY, type LanguagePreference } from '../src/i18n/I18nContext';
+import { logger } from '../src/utils/logger';
 
 const OPTIONS: { id: LanguagePreference; nameKey: 'language.system' | 'language.zh' | 'language.en'; descKey: 'language.systemDesc' | 'language.zhDesc' | 'language.enDesc' }[] = [
   { id: 'system', nameKey: 'language.system', descKey: 'language.systemDesc' },
@@ -25,7 +27,16 @@ export default function Language() {
         {OPTIONS.map((opt) => {
           const selected = opt.id === languagePreference;
           return (
-            <Pressable key={opt.id} onPress={() => setLanguagePreference(opt.id)}>
+            <Pressable
+              key={opt.id}
+              onPress={() => {
+                setLanguagePreference(opt.id);
+                // 持久化选择，下次冷启动由 I18nProvider 水合恢复。
+                AsyncStorage.setItem(LANGUAGE_PREF_STORAGE_KEY, opt.id).catch((error) => {
+                  logger.warn('保存语言偏好失败。', error);
+                });
+              }}
+            >
               <View
                 style={[
                   styles.card,

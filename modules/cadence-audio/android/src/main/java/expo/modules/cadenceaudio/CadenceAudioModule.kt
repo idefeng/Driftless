@@ -56,8 +56,41 @@ class CadenceAudioModule : Module() {
   // none for plain coexist so beats mix on top (PRD §3.2).
   private var focusRequest: AudioFocusRequest? = null
   @Volatile private var currentFocusGain = 0 // 0 = no focus held
-  // No-op: we synthesize our own beats and don't pause on focus loss.
-  private val focusListener = AudioManager.OnAudioFocusChangeListener { }
+  // 短暂失焦（AUDIOFOCUS_LOSS_TRANSIENT）前是否在播；AUDIOFOCUS_GAIN 时据此恢复。
+  @Volatile private var wasPlayingBeforeFocusLoss = false
+  // 焦点被夺走（来电、其他播放器抢占等）时暂停引擎并上报 JS，保持播放按钮与
+  // 锁屏通知同步；短暂中断在焦点归还时自动恢复。
+  private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+    when (change) {
+      AudioManager.AUDIOFOCUS_LOSS -> {
+        // 永久失焦：焦点不会自动归还，放弃恢复并释放焦点申请。
+        wasPlayingBeforeFocusLoss = false
+        if (running) {
+          running = false
+          applyFocus()
+          sendEvent("onInterrupted", mapOf("reason" to "audioFocusLoss"))
+        }
+      }
+      AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+        // 短暂失焦：暂停但保留焦点申请，等 AUDIOFOCUS_GAIN 时恢复播放。
+        if (running) {
+          wasPlayingBeforeFocusLoss = true
+          running = false
+          sendEvent("onInterrupted", mapOf("reason" to "audioFocusLoss"))
+        }
+      }
+      AudioManager.AUDIOFOCUS_GAIN -> {
+        // 焦点归还：仅当中断前确实在播时才重启节拍，下一拍立即发声。
+        if (wasPlayingBeforeFocusLoss && !running) {
+          wasPlayingBeforeFocusLoss = false
+          samplesUntilNextBeat = 0
+          running = true
+          ensurePlaying()
+        }
+      }
+      // AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK：对方允许我们压低音量继续播，保持现状。
+    }
+  }
 
   private var sampleRate = 48000
   private var track: AudioTrack? = null
@@ -80,8 +113,6 @@ class CadenceAudioModule : Module() {
   private val voicePos = IntArray(voiceCount)
 
   private val mainHandler = Handler(Looper.getMainLooper())
-  private var lastEmittedBeat = 0
-  @Volatile private var polling = false
 
   override fun definition() = ModuleDefinition {
     Name("CadenceAudio")
@@ -97,7 +128,6 @@ class CadenceAudioModule : Module() {
       if (!prepared) prepare(mixWithOthers)
       samplesUntilNextBeat = 0 // first beat fires immediately
       beatCounter = 0
-      lastEmittedBeat = 0
       running = true
       ensurePlaying()
       applyFocus()
@@ -169,7 +199,6 @@ class CadenceAudioModule : Module() {
     }
     track = builder.build()
 
-    startBeatPoll()
     registerNoisyReceiver()
     prepared = true
   }
@@ -276,25 +305,6 @@ class CadenceAudioModule : Module() {
     return data
   }
 
-  // MARK: - Beat events (off the render thread)
-
-  private fun startBeatPoll() {
-    if (polling) return
-    polling = true
-    val poll = object : Runnable {
-      override fun run() {
-        if (!polling) return
-        val c = beatCounter
-        if (c != lastEmittedBeat) {
-          lastEmittedBeat = c
-          sendEvent("onBeat", mapOf("beatIndex" to c))
-        }
-        mainHandler.postDelayed(this, 30)
-      }
-    }
-    mainHandler.post(poll)
-  }
-
   // MARK: - Route changes (headphone unplug / Bluetooth disconnect)
 
   private fun registerNoisyReceiver() {
@@ -339,6 +349,11 @@ class CadenceAudioModule : Module() {
    *  - exclusive (mixWithOthers == false) → AUDIOFOCUS_GAIN, so other apps pause
    *  - coexist + ducking → AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, so others lower
    *  - plain coexist, or not playing → no focus, so beats just mix on top
+   *
+   * 注意：ducking 模式在整个会话期间长期持有 TRANSIENT_MAY_DUCK，尽管 transient
+   * 类焦点按设计只用于短暂打断——但 Android 没有长期有效的 “may duck” 增益类型，
+   * 而逐拍重新申请会让音乐流反复压低/恢复。其他应用仍可能抢走完整焦点，由
+   * focusListener 负责暂停/恢复我们。
    */
   private fun applyFocus() {
     val desired = when {
@@ -354,7 +369,7 @@ class CadenceAudioModule : Module() {
 
   private fun requestFocus(gain: Int) {
     val am = audioManager() ?: return
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+    val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       val req = AudioFocusRequest.Builder(gain)
         .setAudioAttributes(
           AudioAttributes.Builder()
@@ -371,7 +386,13 @@ class CadenceAudioModule : Module() {
       @Suppress("DEPRECATION")
       am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, gain)
     }
-    currentFocusGain = gain
+    // 只在真正拿到焦点时置位，否则 currentFocusGain 会骗过 applyFocus 的
+    // “已持有”判断，导致 stop 时漏掉 abandonFocus。
+    if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+      currentFocusGain = gain
+    } else {
+      focusRequest = null
+    }
   }
 
   private fun abandonFocus() {
@@ -392,7 +413,6 @@ class CadenceAudioModule : Module() {
   private fun teardown() {
     running = false
     threadAlive = false
-    polling = false
     unregisterNoisyReceiver()
     abandonFocus()
     try {

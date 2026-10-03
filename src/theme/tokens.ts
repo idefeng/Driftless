@@ -19,6 +19,7 @@ export const brand = {
 export const systemGreen = '#34C759';
 
 export type ColorScheme = 'light' | 'dark';
+export type VisualMode = 'standard' | 'solar' | 'midnight';
 
 export interface Palette {
   scheme: ColorScheme;
@@ -45,6 +46,7 @@ export interface Palette {
   // shadow tint for orange elevations
   brandShadow: string;
 }
+
 
 export const palettes: Record<ColorScheme, Palette> = {
   light: {
@@ -88,6 +90,50 @@ export const palettes: Record<ColorScheme, Palette> = {
     brandShadow: 'rgba(244,114,22,0.55)',
   },
 };
+
+export const visualPalettes: Record<'solar' | 'midnight', Palette> = {
+  solar: {
+    scheme: 'light',
+    bg: '#FFFFFF',
+    bgGradientTop: '#FFFFFF',
+    bgGradientBottom: '#F0F0F0',
+    card: '#F5F5F5',
+    cardAlt: '#E8E8E8',
+    chipNeutral: '#FFFFFF',
+    chipAccent: '#FFE0CC',
+    text: '#000000',
+    textStrong: '#000000',
+    textMuted: '#333333',
+    textFaint: '#555555',
+    textOnBrand: '#B34200',
+    divider: 'rgba(0,0,0,0.22)',
+    trackInactive: '#DDDDDD',
+    brand: '#E65100',
+    brandText: '#B34200',
+    brandShadow: 'rgba(230,81,0,0.45)',
+  },
+  midnight: {
+    scheme: 'dark',
+    bg: '#0E0303',
+    bgGradientTop: '#160505',
+    bgGradientBottom: '#070101',
+    card: '#1B0808',
+    cardAlt: '#240C0C',
+    chipNeutral: '#240C0C',
+    chipAccent: 'rgba(255,60,60,0.20)',
+    text: '#FAD8D8',
+    textStrong: '#FF6666',
+    textMuted: '#C27575',
+    textFaint: '#9E5252',
+    textOnBrand: '#FF8888',
+    divider: 'rgba(255,100,100,0.15)',
+    trackInactive: '#3B1414',
+    brand: '#FF3333',
+    brandText: '#FF6666',
+    brandShadow: 'rgba(255,51,51,0.50)',
+  },
+};
+
 
 // ── Typography ─────────────────────────────────────────────────────────
 // Sora = display / numerals; Manrope = body. Loaded in app/_layout.tsx.

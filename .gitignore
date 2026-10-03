@@ -58,3 +58,7 @@ google-play-service-account*.json
 
 # local Expo module build outputs
 modules/*/android/build/
+
+# build artifacts
+*.aab
+*.apk

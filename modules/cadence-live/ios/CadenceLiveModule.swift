@@ -83,7 +83,7 @@ public class CadenceLiveModule: Module {
   private func startActivity(_ s: LiveSessionRecord) {
     guard #available(iOS 16.2, *) else { return }
     guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-    endActivity() // never run two at once
+    endAllActivities() // never run two at once — also reaps orphans left by a killed process
 
     let attributes = DriftlessActivityAttributes(appName: "Driftless")
     let content = ActivityContent(state: makeContentState(s), staleDate: nil)
@@ -107,9 +107,19 @@ public class CadenceLiveModule: Module {
   }
 
   private func endActivity() {
-    guard #available(iOS 16.2, *),
-          let activity = currentActivity as? Activity<DriftlessActivityAttributes> else { return }
+    guard #available(iOS 16.2, *) else { return }
+    endAllActivities()
+  }
+
+  /// Ends every system-side activity of our type, not just the in-memory
+  /// `currentActivity`: after the process is killed the reference is lost but
+  /// the system-side activity keeps living, so iterate `activities` as the
+  /// source of truth.
+  @available(iOS 16.2, *)
+  private func endAllActivities() {
     currentActivity = nil
-    Task { await activity.end(nil, dismissalPolicy: .immediate) }
+    for activity in Activity<DriftlessActivityAttributes>.activities {
+      Task { await activity.end(nil, dismissalPolicy: .immediate) }
+    }
   }
 }

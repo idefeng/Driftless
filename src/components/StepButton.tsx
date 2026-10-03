@@ -1,5 +1,5 @@
-import React, { useCallback, useRef } from 'react';
-import { Pressable, Text, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Pressable, Text, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { brand, fonts } from '../theme/tokens';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -26,10 +26,13 @@ export function StepButton({
   onStep,
   flex = 1,
   glyphSize = 84,
-  height = 204,
+  height,
 }: StepButtonProps) {
   const { c, isDark } = useTheme();
   const { t } = useI18n();
+  const { height: windowHeight } = useWindowDimensions();
+  // PRD §3.3:1/4 屏高的盲操按钮，带最小高度兜底，平板不再失真。
+  const resolvedHeight = height ?? Math.max(180, Math.round(windowHeight * 0.25));
   const hintText = hint ?? t('step.holdToRepeat');
   const delta = sign === '+' ? 1 : -1;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,6 +45,9 @@ export function StepButton({
     timer.current = null;
     intervalMs.current = 260;
   }, []);
+
+  // 卸载时清掉长按连发计时器，避免泄漏。
+  useEffect(() => clear, [clear]);
 
   const repeat = useCallback(() => {
     if (!pressed.current) return;
@@ -61,11 +67,14 @@ export function StepButton({
     <Pressable
       onPressIn={onPressIn}
       onPressOut={clear}
+      accessibilityRole="button"
+      accessibilityLabel={sign === '+' ? t('a11y.stepUp') : t('a11y.stepDown')}
+      accessibilityHint={hintText}
       style={({ pressed: isDown }) => [
         styles.btn,
         {
           flex,
-          height,
+          height: resolvedHeight,
           backgroundColor: c.card,
           borderColor: isDark ? 'rgba(255,154,69,0.28)' : 'rgba(244,114,22,0.18)',
           opacity: isDown ? 0.92 : 1,

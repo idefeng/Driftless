@@ -30,7 +30,13 @@ export default function Sounds() {
         {SOUNDS.map((s) => {
           const selected = s.id === sound;
           return (
-            <Pressable key={s.id} onPress={() => setSound(s.id)}>
+            <Pressable
+              key={s.id}
+              onPress={() => setSound(s.id)}
+              accessibilityRole="button"
+              accessibilityLabel={getSoundName(t, s.id)}
+              accessibilityState={{ selected }}
+            >
               <View
                 style={[
                   styles.card,
